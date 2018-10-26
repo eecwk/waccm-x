@@ -52,46 +52,43 @@ def waccm_time_series(species, symbol, plot_no):
 
     if name == 'f107':
         plt.subplot(gs1[plot_no])
-        plt.plot(ndates[:], solar_dat[:])
+        plt.plot(ndates[:], solar_dat[:], color='#4B0082')
         plt.ylabel('f107 [$\mathregular{10^{-22}}$ $\mathregular{W}$ $\mathregular{m^{-2}}$ $\mathregular{Hz^{-1}}$]')
         plt.xticks(markers, labels, rotation='45')
         plt.margins(x=0)
         plt.tick_params(labelbottom='off')
     
-    elif name == 'atomic_oxygen':
+    else:    
         plt.subplot(gs1[plot_no])
-        diffs = np.arange(80000,365000,5000)
-        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
-        plt.ylabel('Latitude [%s]' %deg)
-        plt.xticks(markers, labels, rotation='45')
-        plt.tick_params(labelbottom='off')
-        cbaxes = fig.add_axes([0.88, 0.52, 0.015, 0.16]) 
-        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(5.e+4,4.e+5,5.e+4)], orientation='vertical')
-        cbar.set_label('%s vmr [ppmv]' %species)
+        
+        if name == 'atomic_oxygen':
+            diffs = np.arange(80000,365000,5000)
+            ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+            plt.xticks(markers, labels, rotation='45')
+            plt.tick_params(labelbottom='off')
+            plt.ylabel('Latitude [%s]' %deg)
+            cbaxes = fig.add_axes([0.83, 0.552, 0.015, 0.16]) 
+            cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(5.e+4,4.e+5,5.e+4)], orientation='vertical')
 
-    elif name == 'ozone':
-        plt.subplot(gs1[plot_no])
-        diffs = np.arange(0,0.00162,0.00002)
-        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
-        plt.ylabel('Latitude [%s]' %deg)
-        plt.xticks(markers, labels, rotation='45')
-        plt.tick_params(labelbottom='off')                
-        cbaxes = fig.add_axes([0.88, 0.326, 0.015, 0.16]) 
-        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(0,0.0018,0.0003)], orientation='vertical')
-        cbar.set_label('%s vmr [ppmv]' %species)
+        elif name == 'ozone':
+            diffs = np.arange(0,0.00162,0.00002)
+            ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+            plt.xticks(markers, labels, rotation='45')
+            plt.tick_params(labelbottom='off')     
+            plt.ylabel('Latitude [%s]' %deg)
+            cbaxes = fig.add_axes([0.83, 0.334, 0.015, 0.16]) 
+            cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(0,0.0018,0.0003)], orientation='vertical')
      
-    elif name == 'atomic_hydrogen':
-        plt.subplot(gs1[plot_no])
-        diffs = np.arange(6,16.6,0.1)
-        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
-        plt.ylabel('Latitude [%s]' %deg)
-        plt.xticks(markers, labels, rotation='45')
-        plt.xlabel('Year')
-        cbaxes = fig.add_axes([0.88, 0.133, 0.015, 0.16]) 
-        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(6,18,2)], orientation='vertical')
+        elif name == 'atomic_hydrogen':
+            diffs = np.arange(6,16.6,0.1)
+            ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+            plt.xticks(markers, labels, rotation='45')
+            plt.xlabel('Year')
+            plt.ylabel('Latitude [%s]' %deg)
+            cbaxes = fig.add_axes([0.83, 0.122, 0.015, 0.16]) 
+            cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(6,18,2)], orientation='vertical')
+        
         cbar.set_label('%s vmr [ppmv]' %species)
-
-    #plt.title('120 km')
 
 start = date(2000,1,1)
 date_list = []
@@ -105,8 +102,10 @@ for i in range(0,177):
     ndates[i] = ndate
     fdates.append(date_list[i].strftime('%Y-%m'))
 
-fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(9,16))
-fig.subplots_adjust(right=0.85)
+fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(9,12))
+fig.subplots_adjust(right=0.8)
+fig.subplots_adjust(top=0.95)
+fig.subplots_adjust(bottom=0.1)
 gs1 = gridspec.GridSpec(4, 1)
 gs1.update(wspace=0.1, hspace=0.1)
 
@@ -115,4 +114,5 @@ waccm_time_series('atomic_oxygen', 'O', 1)
 waccm_time_series('ozone', 'O3', 2)
 waccm_time_series('atomic_hydrogen', 'H', 3)
 
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/time_series.jpg', dpi=300)
 plt.show()
