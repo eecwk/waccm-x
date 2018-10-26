@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import colors, dates
 from datetime import datetime, timedelta, date
 import calendar
+import matplotlib.gridspec as gridspec
 
 deg = unichr(176)
 
@@ -18,6 +19,7 @@ def add_months(sourcedate,months):
 def waccm_time_series(species, symbol, plot_no):
     
     name = species
+    solar_dat = np.zeros([177])
     lats_waccm = np.zeros([96])
     z3 = np.zeros([1,145,96,144])
     z3_zon_av = np.zeros([1,145,96])
@@ -29,6 +31,7 @@ def waccm_time_series(species, symbol, plot_no):
 
     for i in range(0,177):    
         fname_waccm = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s.nc' %fdates[i], 'r', format='NETCDF4')
+        solar_dat[i] = fname_waccm.variables['f107'][:]
         lats_waccm[:] = fname_waccm.variables['lat'][:]
         z3[:] = fname_waccm.variables['Z3'][:]
         z3_zon_av[:] = np.mean(z3[:], axis=3)
@@ -41,28 +44,54 @@ def waccm_time_series(species, symbol, plot_no):
         species_series[i] = species_zon_av_120
 
     fname_waccm.close()
-    plt.figure(figsize=(9,4))
-    y, x = np.meshgrid(lats_waccm, ndates)
-  
-    if name == 'atomic_oxygen':
-        diffs = np.arange(80000,365000,5000)
-        plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs)
-        cbar = plt.colorbar(ticks=[np.arange(5.e+4,4.e+5,5.e+4)], orientation='vertical')
-
-    elif name == 'ozone':
-        diffs = np.arange(0,0.00162,0.00002)
-        plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs)
-        cbar = plt.colorbar(orientation='vertical')
-
-    cbar.set_label('%s vmr [ppmv]' %species)
     n = np.arange(0,180,12)
     markers = ndates[n]
     labels = ['2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014']
-    plt.xticks(markers, labels, rotation='45')
-    plt.xlabel('Year')
-    plt.ylabel('Latitude [%s]' %deg)
-    plt.title('120 km')
-    plt.show()
+  
+    y, x = np.meshgrid(lats_waccm, ndates)
+
+    if name == 'f107':
+        plt.subplot(gs1[plot_no])
+        plt.plot(ndates[:], solar_dat[:])
+        plt.ylabel('f107 [$\mathregular{10^{-22}}$ $\mathregular{W}$ $\mathregular{m^{-2}}$ $\mathregular{Hz^{-1}}$]')
+        plt.xticks(markers, labels, rotation='45')
+        plt.margins(x=0)
+        plt.tick_params(labelbottom='off')
+    
+    elif name == 'atomic_oxygen':
+        plt.subplot(gs1[plot_no])
+        diffs = np.arange(80000,365000,5000)
+        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+        plt.ylabel('Latitude [%s]' %deg)
+        plt.xticks(markers, labels, rotation='45')
+        plt.tick_params(labelbottom='off')
+        cbaxes = fig.add_axes([0.88, 0.52, 0.015, 0.16]) 
+        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(5.e+4,4.e+5,5.e+4)], orientation='vertical')
+        cbar.set_label('%s vmr [ppmv]' %species)
+
+    elif name == 'ozone':
+        plt.subplot(gs1[plot_no])
+        diffs = np.arange(0,0.00162,0.00002)
+        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+        plt.ylabel('Latitude [%s]' %deg)
+        plt.xticks(markers, labels, rotation='45')
+        plt.tick_params(labelbottom='off')                
+        cbaxes = fig.add_axes([0.88, 0.326, 0.015, 0.16]) 
+        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(0,0.0018,0.0003)], orientation='vertical')
+        cbar.set_label('%s vmr [ppmv]' %species)
+     
+    elif name == 'atomic_hydrogen':
+        plt.subplot(gs1[plot_no])
+        diffs = np.arange(6,16.6,0.1)
+        ax = plt.contourf(x[:,:], y[:,:], species_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+        plt.ylabel('Latitude [%s]' %deg)
+        plt.xticks(markers, labels, rotation='45')
+        plt.xlabel('Year')
+        cbaxes = fig.add_axes([0.88, 0.133, 0.015, 0.16]) 
+        cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(6,18,2)], orientation='vertical')
+        cbar.set_label('%s vmr [ppmv]' %species)
+
+    #plt.title('120 km')
 
 start = date(2000,1,1)
 date_list = []
@@ -76,5 +105,14 @@ for i in range(0,177):
     ndates[i] = ndate
     fdates.append(date_list[i].strftime('%Y-%m'))
 
-#waccm_time_series('atomic_oxygen', 'O', 0)
-waccm_time_series('ozone', 'O3', 1)
+fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(9,16))
+fig.subplots_adjust(right=0.85)
+gs1 = gridspec.GridSpec(4, 1)
+gs1.update(wspace=0.1, hspace=0.1)
+
+waccm_time_series('f107', 'O', 0)
+waccm_time_series('atomic_oxygen', 'O', 1)
+waccm_time_series('ozone', 'O3', 2)
+waccm_time_series('atomic_hydrogen', 'H', 3)
+
+plt.show()
