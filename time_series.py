@@ -17,7 +17,7 @@ def add_months(sourcedate,months):
     return date(year,month,day)
 
 def waccm_time_series(species, symbol, plot_no):
-    
+
     name = species
     solar_dat = np.zeros([177])
     lats_waccm = np.zeros([96])
@@ -88,8 +88,65 @@ def waccm_time_series(species, symbol, plot_no):
             cbaxes = fig.add_axes([0.83, 0.122, 0.015, 0.16]) 
             cbar = plt.colorbar(ax, cax=cbaxes, ticks=[np.arange(6,18,2)], orientation='vertical')
         
-        cbar.set_label('%s vmr [ppmv]' %species)
+        cbar.set_label('%s vmr [ppmv]' %name)
+        return
 
+def waccm_time_series_group(group):
+
+    name = group
+    lats_waccm = np.zeros([96])
+    z3 = np.zeros([1,145,96,144])
+    z3_zon_av = np.zeros([1,145,96])
+    z3_zon_mer_av = np.zeros([1,145])
+    z3_zon_mer_t_av = np.zeros([145])
+    
+    if name == 'ox':
+        symbol = ['O','O1D','O2','O2_1D','O2_1S','O2p','O3','Op','Op2D','Op2P']
+        
+    else:
+        return    
+        
+    species_no = len(symbol)
+    species_dat = np.zeros([1,145,96,144])
+    species_tm = np.zeros([145,96,144])
+    species_zon_av = np.zeros([145,96])
+    species_zon_av_120 = np.zeros([96])
+    species_series = np.zeros([177,96])
+    group_dat = np.zeros([species_no,177,96])
+    group_series = np.zeros([177,96])  
+    
+    for i in range(0,species_no):
+        for j in range(0,177):    
+            fname_waccm = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s.nc' %fdates[j], 'r', format='NETCDF4')
+            lats_waccm[:] = fname_waccm.variables['lat'][:]
+            z3[:] = fname_waccm.variables['Z3'][:]
+            z3_zon_av[:] = np.mean(z3[:], axis=3)
+            z3_zon_mer_av[:] = np.mean(z3_zon_av[:], axis=2)
+            z3_zon_mer_t_av[:] = np.mean(z3_zon_mer_av[:], axis=0)
+            species_dat[:,:,:,:] = fname_waccm.variables[symbol[i]][:]*(1.e6)
+            species_tm[:,:,:] = np.mean(species_dat[:], axis=0)
+            species_zon_av[:,:] = np.mean(species_tm[:], axis=2)
+            species_zon_av_120[:] = species_zon_av[44,:]
+            species_series[j,:] = species_zon_av_120
+    
+        group_dat[i,:,:] = species_series[:]
+
+    fname_waccm.close()
+    group_series = np.mean(group_dat[:], axis=0)
+    n = np.arange(0,180,12)
+    markers = ndates[n]
+    labels = ['2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014']
+    y, x = np.meshgrid(lats_waccm, ndates)
+    plt.figure(figsize=(9,4))
+    diffs = np.arange(20000,42500,500)
+    ax = plt.contourf(x[:,:], y[:,:], group_series[:,:], diffs, cmap=plt.get_cmap('inferno'))
+    plt.xticks(markers, labels, rotation='45')
+    plt.xlabel('Year')
+    plt.ylabel('Latitude [%s]' %deg)
+    cbar = plt.colorbar(ax, ticks=[np.arange(20000,50000,5000)], orientation='vertical')
+    cbar.set_label('%s vmr [ppmv]' %name)
+    return
+        
 start = date(2000,1,1)
 date_list = []
 fdates = []
@@ -102,17 +159,21 @@ for i in range(0,177):
     ndates[i] = ndate
     fdates.append(date_list[i].strftime('%Y-%m'))
 
+'''
 fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(9,12))
 fig.subplots_adjust(right=0.8)
 fig.subplots_adjust(top=0.95)
 fig.subplots_adjust(bottom=0.1)
 gs1 = gridspec.GridSpec(4, 1)
 gs1.update(wspace=0.1, hspace=0.1)
-
 waccm_time_series('f107', 'O', 0)
 waccm_time_series('atomic_oxygen', 'O', 1)
 waccm_time_series('ozone', 'O3', 2)
 waccm_time_series('atomic_hydrogen', 'H', 3)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/time_series_O_O3_H.jpg', dpi=300)
+'''
 
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/time_series.jpg', dpi=300)
+waccm_time_series_group('ox')
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/time_series_Ox.jpg', dpi=300)
+
 plt.show()
