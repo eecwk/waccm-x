@@ -6,6 +6,7 @@ from datetime import date
 import calendar
 
 deg = unichr(176)
+delta = unichr(916)
 k_B = 1.38064852e-23
 
 lats = np.zeros([96])
@@ -19,6 +20,14 @@ n_yrly = np.zeros([177,96])
 p_all_mthly = np.zeros([12,96])
 T_all_mthly = np.zeros([12,96])
 n_all_mthly = np.zeros([12,96])
+
+p_indv_yrs = np.zeros([14,12,96])
+T_indv_yrs = np.zeros([14,12,96])
+n_indv_yrs = np.zeros([14,12,96])
+
+p_indv_yrs_diff = np.zeros([14,12])
+T_indv_yrs_diff = np.zeros([14,12])
+n_indv_yrs_diff = np.zeros([14,12])
 
 fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/zonal_means/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
 levs = fname_uni.variables['lev'][:]
@@ -51,18 +60,35 @@ def calc_n(pressure_int, temp_int):
         n[i] = (pressure_int[i] * 100) / (temp_int[i] * k_B)
     return n
 
-def calc_mthly_means(param_yrly, month):
+def calc_mthly_means(param, month):
     start = month
     end = (13 * 12) + month
     step = np.arange(start, end, 12)
     param_mthly = np.zeros([len(step),96])
     for i in range(0,len(step)):
         year = step[i]
-        param_mthly[i,:] = param_yrly[year,:]
+        param_mthly[i,:] = param[year,:]
     param_mthly_mean = np.mean(param_mthly, axis=0)
     return param_mthly_mean
 
-def make_deseason_arrays(output):
+def slice_yrly_array(param):
+    yrly_slice = np.zeros([14,12,96])
+    step = np.arange(0, 180, 12)
+    for i in range(0,14):
+        yrly_slice[i,:,:] = param[step[i]:step[i+1],:]
+    return yrly_slice
+
+def make_yrly_diff_arrays(param0, param1):
+    baseline = np.zeros([12])
+    param_indv_yrs_global = np.zeros([14,12])
+    param_indv_yrs_diff = np.zeros([14,12])
+    baseline = np.mean(param0, axis=1)
+    param_indv_yrs_global = np.mean(param1, axis=2)
+    for i in range(0,14):
+        param_indv_yrs_diff[i,:] = param_indv_yrs_global[i,:] - baseline
+    return param_indv_yrs_diff
+
+def make_desolar_arrays(output):
     param_all_mthly = np.zeros([12,96])
     z3_dat = np.zeros([1,145,96])
     z3 = np.zeros([145,96])
@@ -86,21 +112,37 @@ def make_deseason_arrays(output):
         fname.close()            
         p_yrly[i,:] = interp_p(200000, z3)
         T_yrly[i,:] = interp_T(p_int, T)
-        n_yrly[i,:] = calc_n(p_int, T_int)    
-    for i in range(0,12):
-        p_all_mthly[i] = calc_mthly_means(p_yrly, i)
-        T_all_mthly[i] = calc_mthly_means(T_yrly, i)
-        n_all_mthly[i] = calc_mthly_means(n_yrly, i)    
+        n_yrly[i,:] = calc_n(p_int, T_int)      
     for i in range(0,12):
         if output == 'p':
-            param_all_mthly[i] = calc_mthly_means(p_yrly, i)
+            param_all_mthly[i,:] = calc_mthly_means(p_yrly, i)
         if output == 'T':
-            param_all_mthly[i] = calc_mthly_means(T_yrly, i)
+            param_all_mthly[i,:] = calc_mthly_means(T_yrly, i)
         if output == 'n':
-            param_all_mthly[i] = calc_mthly_means(n_yrly, i)
+            param_all_mthly[i,:] = calc_mthly_means(n_yrly, i)
     return param_all_mthly
 
-def plot(param, label):
+def plot_1d(param0, param1, label):
+    plt.figure(figsize=(6,4))
+    months = np.arange(0,12,1)
+    x = months
+    years = ['2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
+    #colors_dark = ['#b71c1c', '#880e4f', '#4a148c', '#1a237e', '#0d47a1', '#006064', '#004d40', '#1b5e20', '#827717', '#f57f17', '#e65100', '#3e2723', '#212121', '#263238']
+    colors_light = ['#f44336', '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#cddc39', '#ffeb3b', '#ff9800', '#795548', '#9e9e9e', '#607d8b']
+    for i in range(0,14):
+        y1 = param1[i,:]
+        plt.plot(x, y1, color=colors_light[i], label=years[i])
+    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    plt.xticks(months, labels, rotation='45')
+    plt.yticks()
+    plt.xlabel('Month')
+    plt.ylabel('%s' %label)
+    plt.legend(bbox_to_anchor=(1.05, 1.01))
+    plt.title('Difference from 2000-14 seasonal mean (200 km)')
+    #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
+    plt.show()
+
+def plot_2d(param, label):
     months = np.arange(0,12,1)
     x, y = np.meshgrid(months, lats)
     plt.figure(figsize=(6,4))
@@ -119,56 +161,18 @@ def plot(param, label):
     #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
     plt.show()
 
-p_all_mthly = make_deseason_arrays('p')
-T_all_mthly = make_deseason_arrays('T')
-n_all_mthly = make_deseason_arrays('n')
 
-plot(T_all_mthly, 'Temperature')
+p_all_mthly[:,:] = make_desolar_arrays('p')
+T_all_mthly[:,:] = make_desolar_arrays('T')
+n_all_mthly[:,:] = make_desolar_arrays('n')
 
-'''
-days = np.arange(0,365,1)
-mth_mids = [15.5, 45, 74.5, 105, 135.5, 166, 196.5, 227.5, 258, 288.5, 319, 349]
-labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-z = np.zeros([365,96])
-for i in range(0,365):
-    if i < 31:
-        z[i,:] = T_all_mthly[0,:]
-    if 31 <= i < 59:
-        z[i,:] = T_all_mthly[1,:]
-    if 59 <= i < 90:
-        z[i,:] = T_all_mthly[2,:]    
-    if 90 <= i < 120:
-        z[i,:] = T_all_mthly[3,:]  
-    if 120 <= i <151:
-        z[i,:] = T_all_mthly[4,:]
-    if 151 <= i < 181:
-        z[i,:] = T_all_mthly[5,:]
-    if 181 <= i < 212:
-        z[i,:] = T_all_mthly[6,:]    
-    if 212 <= i < 243:
-        z[i,:] = T_all_mthly[7,:]  
-    if 243 <= i < 273:
-        z[i,:] = T_all_mthly[6,:]
-    if 273 <= i < 304:
-        z[i,:] = T_all_mthly[9,:]
-    if 304 <= i < 334:
-        z[i,:] = T_all_mthly[10,:]    
-    if 334 <= i < 365:
-        z[i,:] = T_all_mthly[11,:]
+p_indv_yrs[:,:,:] = slice_yrly_array(p_yrly)
+T_indv_yrs[:,:,:] = slice_yrly_array(T_yrly)
+n_indv_yrs[:,:,:] = slice_yrly_array(n_yrly)
 
-x, y = np.meshgrid(days, lats)
-diffs = np.arange(700,1100,10)
-plt.figure(figsize=(6,4))
-plt.xticks(mth_mids, labels, rotation='45')
-plt.yticks(np.arange(-90,120,30))
-zT = z.transpose()
-plt.contourf(x[:,:], y[:,:], zT[:,:], diffs, cmap=plt.get_cmap('inferno'))
-#cbar = plt.colorbar(ticks=np.arange(-100,125,25))
-cbar = plt.colorbar()
-cbar.set_label('Temperature [K]')
-plt.xlabel('Month')
-plt.ylabel('Latitude [%s]' %deg)
-plt.title('De-seasonalised monthly 2000-2014 means 200 km')
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
-plt.show()
-'''
+p_indv_yrs_diff[:,:] = make_yrly_diff_arrays(p_all_mthly, p_indv_yrs)
+T_indv_yrs_diff[:,:] = make_yrly_diff_arrays(T_all_mthly, T_indv_yrs)
+n_indv_yrs_diff[:,:] = make_yrly_diff_arrays(n_all_mthly, n_indv_yrs)
+
+plot_1d(T_all_mthly, T_indv_yrs_diff, '%sT' %delta)
+#plot_2d(T_all_mthly, 'Temperature')
