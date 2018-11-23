@@ -14,20 +14,15 @@ levs = np.zeros([145])
 p_int = np.zeros([96])
 T_int = np.zeros([96])
 n = np.zeros([96])
-p_yrly = np.zeros([177,96])
-T_yrly = np.zeros([177,96])
-n_yrly = np.zeros([177,96])
-p_all_mthly = np.zeros([12,96])
-T_all_mthly = np.zeros([12,96])
-n_all_mthly = np.zeros([12,96])
-
-p_indv_yrs = np.zeros([14,12,96])
-T_indv_yrs = np.zeros([14,12,96])
-n_indv_yrs = np.zeros([14,12,96])
-
-p_indv_yrs_diff = np.zeros([14,12])
-T_indv_yrs_diff = np.zeros([14,12])
-n_indv_yrs_diff = np.zeros([14,12])
+p_time_series = np.zeros([177,96])
+T_time_series = np.zeros([177,96])
+n_time_series = np.zeros([177,96])
+p_seasonal_av = np.zeros([12,96])
+T_seasonal_av = np.zeros([12,96])
+n_seasonal_av = np.zeros([12,96])
+p_seasonal_av_diff = np.zeros([14,12])
+T_seasonal_av_diff = np.zeros([14,12])
+n_seasonal_av_diff = np.zeros([14,12])
 
 fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/zonal_means/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
 levs = fname_uni.variables['lev'][:]
@@ -71,25 +66,8 @@ def calc_mthly_means(param, month):
     param_mthly_mean = np.mean(param_mthly, axis=0)
     return param_mthly_mean
 
-def slice_yrly_array(param):
-    yrly_slice = np.zeros([14,12,96])
-    step = np.arange(0, 180, 12)
-    for i in range(0,14):
-        yrly_slice[i,:,:] = param[step[i]:step[i+1],:]
-    return yrly_slice
-
-def make_yrly_diff_arrays(param0, param1):
-    baseline = np.zeros([12])
-    param_indv_yrs_global = np.zeros([14,12])
-    param_indv_yrs_diff = np.zeros([14,12])
-    baseline = np.mean(param0, axis=1)
-    param_indv_yrs_global = np.mean(param1, axis=2)
-    for i in range(0,14):
-        param_indv_yrs_diff[i,:] = param_indv_yrs_global[i,:] - baseline
-    return param_indv_yrs_diff
-
-def make_desolar_arrays(output):
-    param_all_mthly = np.zeros([12,96])
+def make_time_series_arrays(param):
+    param_time_series = np.zeros([177,96])
     z3_dat = np.zeros([1,145,96])
     z3 = np.zeros([145,96])
     T = np.zeros([96])
@@ -109,29 +87,48 @@ def make_desolar_arrays(output):
         z3 = np.mean(z3_dat, axis=0)
         T_dat = fname.variables['T'][:]
         T = np.mean(T_dat, axis=0)
-        fname.close()            
-        p_yrly[i,:] = interp_p(200000, z3)
-        T_yrly[i,:] = interp_T(p_int, T)
-        n_yrly[i,:] = calc_n(p_int, T_int)      
+        fname.close()         
+        p_time_series[i,:] = interp_p(200000, z3)
+        T_time_series[i,:] = interp_T(p_int, T)
+        n_time_series[i,:] = calc_n(p_int, T_int)        
+    if param == 'p':          
+        param_time_series[:,:] = p_time_series[:,:]
+    if param == 'T':
+        param_time_series[:,:] = T_time_series[:,:]
+    if param == 'n':
+        param_time_series[:,:] = n_time_series[:,:]
+    return param_time_series
+    
+def make_seasonal_av_arrays(param):
+    param_seasonal_av = np.zeros([12,96])
     for i in range(0,12):
-        if output == 'p':
-            param_all_mthly[i,:] = calc_mthly_means(p_yrly, i)
-        if output == 'T':
-            param_all_mthly[i,:] = calc_mthly_means(T_yrly, i)
-        if output == 'n':
-            param_all_mthly[i,:] = calc_mthly_means(n_yrly, i)
-    return param_all_mthly
+        param_seasonal_av[i,:] = calc_mthly_means(param, i)
+    return param_seasonal_av
+
+def make_yrly_diff_arrays(param0, param1):
+    
+    param_indv_yrs = np.zeros([14,12,96])
+    step = np.arange(0, 180, 12)
+    for i in range(0,14): 
+        param_indv_yrs[i,:,:] = param0[step[i]:step[i+1],:]   
+    baseline = np.zeros([12])
+    param_indv_yrs_global = np.zeros([14,12])
+    param_indv_yrs_diff = np.zeros([14,12])
+    baseline = np.mean(param1, axis=1)
+    param_indv_yrs_global = np.mean(param_indv_yrs, axis=2)
+    for i in range(0,14):
+        param_indv_yrs_diff[i,:] = param_indv_yrs_global[i,:] - baseline
+    return param_indv_yrs_diff
 
 def plot_1d(param0, param1, label):
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(8,4))
     months = np.arange(0,12,1)
     x = months
     years = ['2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
-    #colors_dark = ['#b71c1c', '#880e4f', '#4a148c', '#1a237e', '#0d47a1', '#006064', '#004d40', '#1b5e20', '#827717', '#f57f17', '#e65100', '#3e2723', '#212121', '#263238']
     colors_light = ['#f44336', '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#cddc39', '#ffeb3b', '#ff9800', '#795548', '#9e9e9e', '#607d8b']
     for i in range(0,14):
-        y1 = param1[i,:]
-        plt.plot(x, y1, color=colors_light[i], label=years[i])
+        y = param1[i,:]
+        plt.plot(x, y, color=colors_light[i], label=years[i])
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     plt.xticks(months, labels, rotation='45')
     plt.yticks()
@@ -139,7 +136,7 @@ def plot_1d(param0, param1, label):
     plt.ylabel('%s' %label)
     plt.legend(bbox_to_anchor=(1.05, 1.01))
     plt.title('Difference from 2000-14 seasonal mean (200 km)')
-    #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
+    #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/diff_from_seasonal_mean', bbox_inches='tight', dpi=300)
     plt.show()
 
 def plot_2d(param, label):
@@ -157,22 +154,23 @@ def plot_2d(param, label):
     cbar.set_label('%s' %label)
     plt.xlabel('Month')
     plt.ylabel('Latitude [%s]' %deg)
-    plt.title('De-seasonalised monthly 2000-2014 means 200 km')
+    plt.title('Seasonal mean 2000-14 (200 km)')
     #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
     plt.show()
 
+p_time_series = make_time_series_arrays('p')
+T_time_series = make_time_series_arrays('T')
+n_time_series = make_time_series_arrays('n')
 
-p_all_mthly[:,:] = make_desolar_arrays('p')
-T_all_mthly[:,:] = make_desolar_arrays('T')
-n_all_mthly[:,:] = make_desolar_arrays('n')
+p_seasonal_av[:,:] = make_seasonal_av_arrays(p_time_series)
+T_seasonal_av[:,:] = make_seasonal_av_arrays(T_time_series)
+n_seasonal_av[:,:] = make_seasonal_av_arrays(n_time_series)
 
-p_indv_yrs[:,:,:] = slice_yrly_array(p_yrly)
-T_indv_yrs[:,:,:] = slice_yrly_array(T_yrly)
-n_indv_yrs[:,:,:] = slice_yrly_array(n_yrly)
+p_seasonal_av_diff[:,:] = make_yrly_diff_arrays(p_time_series, p_seasonal_av)
+T_seasonal_av_diff[:,:] = make_yrly_diff_arrays(T_time_series, T_seasonal_av)
+n_seasonal_av_diff[:,:] = make_yrly_diff_arrays(n_time_series, n_seasonal_av)
 
-p_indv_yrs_diff[:,:] = make_yrly_diff_arrays(p_all_mthly, p_indv_yrs)
-T_indv_yrs_diff[:,:] = make_yrly_diff_arrays(T_all_mthly, T_indv_yrs)
-n_indv_yrs_diff[:,:] = make_yrly_diff_arrays(n_all_mthly, n_indv_yrs)
-
-plot_1d(T_all_mthly, T_indv_yrs_diff, '%sT' %delta)
-#plot_2d(T_all_mthly, 'Temperature')
+plot_1d(p_seasonal_av, p_seasonal_av_diff, 'p [HPa]')
+plot_1d(T_seasonal_av, T_seasonal_av_diff, '%sT [K]' %delta)
+plot_1d(n_seasonal_av, n_seasonal_av_diff, 'n [$\mathregular{m^{-3}}$]')
+#plot_2d(T_seasonal_av, 'Temperature')
