@@ -88,10 +88,7 @@ def make_time_series_arrays(param, altitude):
         z3 = np.mean(z3_dat, axis=0)
         T_dat = fname.variables['T'][:]
         T = np.mean(T_dat, axis=0)
-        fname.close()         
-        #p_time_series[i,:] = interp_p(altitude, z3)
-        #T_time_series[i,:] = interp_T(p_int, T)
-        #n_time_series[i,:] = calc_n(p_int, T_int) 
+        fname.close()
         p_time_series[i,:] = interp_p(altitude, z3)
         T_time_series[i,:] = interp_T(p_time_series[i,:], T)
         n_time_series[i,:] = calc_n(p_time_series[i,:], T_time_series[i,:])
@@ -110,26 +107,28 @@ def make_seasonal_av_arrays(param):
     return param_seasonal_av
 
 def make_seasonal_av_diff_arrays(param0, param1):
-    
-    param_indv_yrs = np.zeros([14,12,96])
+    baseline = np.zeros([12])
+    param_time_series_set_year = np.zeros([14,12,96])
+    param_time_series_set_year_lat_av = np.zeros([14,12])
+    param_seasonal_av_diff = np.zeros([14,12]) 
+    baseline = np.mean(param1, axis=1)
     step = np.arange(0, 180, 12)
     for i in range(0,14): 
-        param_indv_yrs[i,:,:] = param0[step[i]:step[i+1],:]   
-    baseline = np.zeros([12])
-    param_indv_yrs_global = np.zeros([14,12])
-    param_indv_yrs_diff = np.zeros([14,12])
-    baseline = np.mean(param1, axis=1)
-    param_indv_yrs_global = np.mean(param_indv_yrs, axis=2)
+        param_time_series_set_year[i,:,:] = param0[step[i]:step[i+1],:]
+    param_time_series_set_year_lat_av = np.mean(param_time_series_set_year, axis=2)
     for i in range(0,14):
-        param_indv_yrs_diff[i,:] = param_indv_yrs_global[i,:] - baseline
-    return param_indv_yrs_diff
+        param_seasonal_av_diff[i,:] = param_time_series_set_year_lat_av[i,:] - baseline
+    return param_seasonal_av_diff
 
-def plot_1d(param0, param1, label):
+def plot_1d(param0, param1, label, altitude):
     plt.figure(figsize=(8,4))
+    #baseline = np.zeros([12])
+    #baseline = np.mean(param0, axis=1)
     months = np.arange(0,12,1)
     x = months
     years = ['2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
     colors_light = ['#f44336', '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#cddc39', '#ffeb3b', '#ff9800', '#795548', '#9e9e9e', '#607d8b']
+    #plt.plot(x, baseline)
     for i in range(0,14):
         y = param1[i,:]
         plt.plot(x, y, color=colors_light[i], label=years[i])
@@ -139,9 +138,10 @@ def plot_1d(param0, param1, label):
     plt.xlabel('Month')
     plt.ylabel('%s' %label)
     plt.legend(bbox_to_anchor=(1.05, 1.01))
-    plt.title('Difference from 2000-14 seasonal mean (200 km)')
+    plt.title('Difference from 2000-14 seasonal mean (%s m)' %altitude)
     #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/diff_from_seasonal_mean', bbox_inches='tight', dpi=300)
     plt.show()
+    return
 
 def plot_2d(param, label):
     months = np.arange(0,12,1)
@@ -159,9 +159,10 @@ def plot_2d(param, label):
     cbar.set_label('%s' %label)
     plt.xlabel('Month')
     plt.ylabel('Latitude [%s]' %deg)
-    plt.title('Seasonal mean 2000-14 (200 km)')
+    plt.title('Seasonal mean 2000-14 (%s m)' %altitude)
     #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
     plt.show()
+    return
 
 altitude = 200000
 
@@ -177,10 +178,10 @@ p_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(p_time_series, p_seasonal
 T_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(T_time_series, T_seasonal_av)
 n_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(n_time_series, n_seasonal_av)
 
-plot_1d(p_seasonal_av, p_seasonal_av_diff, 'p [HPa]')
-plot_1d(T_seasonal_av, T_seasonal_av_diff, '%sT [K]' %delta)
-plot_1d(n_seasonal_av, n_seasonal_av_diff, 'n [$\mathregular{m^{-3}}$]')
+plot_1d(p_seasonal_av, p_seasonal_av_diff, 'p [HPa]', altitude)
+plot_1d(T_seasonal_av, T_seasonal_av_diff, '%sT [K]' %delta, altitude)
+plot_1d(n_seasonal_av, n_seasonal_av_diff, 'n [$\mathregular{m^{-3}}$]', altitude)
 
-#plot_2d(p_seasonal_av, 'p')
-#plot_2d(T_seasonal_av, 'T')
-#plot_2d(n_seasonal_av, 'n')
+#plot_2d(p_seasonal_av, 'p', altitude)
+#plot_2d(T_seasonal_av, 'T', altitude)
+#plot_2d(n_seasonal_av, 'n', altitude)
