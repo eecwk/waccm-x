@@ -17,6 +17,7 @@ n = np.zeros([96])
 p_time_series = np.zeros([177,96])
 T_time_series = np.zeros([177,96])
 n_time_series = np.zeros([177,96])
+
 p_seasonal_av = np.zeros([12,96])
 T_seasonal_av = np.zeros([12,96])
 n_seasonal_av = np.zeros([12,96])
@@ -47,7 +48,7 @@ def interp_p(altitude, gpheight):
 
 def interp_T(pressure_int, temp):
     for i in range(0,96):
-        T_int[i] = np.interp(pressure_int[i], levs[:][::-1], temp[:,i][::-1])
+        T_int[i] = np.interp(pressure_int[i], levs[:], temp[:,i])
     return T_int
 
 def calc_n(pressure_int, temp_int):
@@ -66,7 +67,7 @@ def calc_mthly_means(param, month):
     param_mthly_mean = np.mean(param_mthly, axis=0)
     return param_mthly_mean
 
-def make_time_series_arrays(param):
+def make_time_series_arrays(param, altitude):
     param_time_series = np.zeros([177,96])
     z3_dat = np.zeros([1,145,96])
     z3 = np.zeros([145,96])
@@ -88,9 +89,12 @@ def make_time_series_arrays(param):
         T_dat = fname.variables['T'][:]
         T = np.mean(T_dat, axis=0)
         fname.close()         
-        p_time_series[i,:] = interp_p(200000, z3)
-        T_time_series[i,:] = interp_T(p_int, T)
-        n_time_series[i,:] = calc_n(p_int, T_int)        
+        #p_time_series[i,:] = interp_p(altitude, z3)
+        #T_time_series[i,:] = interp_T(p_int, T)
+        #n_time_series[i,:] = calc_n(p_int, T_int) 
+        p_time_series[i,:] = interp_p(altitude, z3)
+        T_time_series[i,:] = interp_T(p_time_series[i,:], T)
+        n_time_series[i,:] = calc_n(p_time_series[i,:], T_time_series[i,:])
     if param == 'p':          
         param_time_series[:,:] = p_time_series[:,:]
     if param == 'T':
@@ -105,7 +109,7 @@ def make_seasonal_av_arrays(param):
         param_seasonal_av[i,:] = calc_mthly_means(param, i)
     return param_seasonal_av
 
-def make_yrly_diff_arrays(param0, param1):
+def make_seasonal_av_diff_arrays(param0, param1):
     
     param_indv_yrs = np.zeros([14,12,96])
     step = np.arange(0, 180, 12)
@@ -143,13 +147,14 @@ def plot_2d(param, label):
     months = np.arange(0,12,1)
     x, y = np.meshgrid(months, lats)
     plt.figure(figsize=(6,4))
-    diffs = np.arange(700,1100,10)
+    #diffs = np.arange(700,1100,10)
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     plt.xticks(months, labels, rotation='45')
     plt.yticks(np.arange(-90,120,30))
     z = param[:,:]
     zT = z.transpose()
-    plt.contourf(x[:,:], y[:,:], zT[:,:], diffs, cmap=plt.get_cmap('seismic'))
+    #plt.contourf(x[:,:], y[:,:], zT[:,:], diffs, cmap=plt.get_cmap('seismic'))
+    plt.contourf(x[:,:], y[:,:], zT[:,:], cmap=plt.get_cmap('seismic'))
     cbar = plt.colorbar()
     cbar.set_label('%s' %label)
     plt.xlabel('Month')
@@ -158,19 +163,24 @@ def plot_2d(param, label):
     #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/%s_200km_%s' %label %tscale, dpi=300)
     plt.show()
 
-p_time_series = make_time_series_arrays('p')
-T_time_series = make_time_series_arrays('T')
-n_time_series = make_time_series_arrays('n')
+altitude = 200000
+
+p_time_series = make_time_series_arrays('p', altitude)
+T_time_series = make_time_series_arrays('T', altitude)
+n_time_series = make_time_series_arrays('n', altitude)
 
 p_seasonal_av[:,:] = make_seasonal_av_arrays(p_time_series)
 T_seasonal_av[:,:] = make_seasonal_av_arrays(T_time_series)
 n_seasonal_av[:,:] = make_seasonal_av_arrays(n_time_series)
 
-p_seasonal_av_diff[:,:] = make_yrly_diff_arrays(p_time_series, p_seasonal_av)
-T_seasonal_av_diff[:,:] = make_yrly_diff_arrays(T_time_series, T_seasonal_av)
-n_seasonal_av_diff[:,:] = make_yrly_diff_arrays(n_time_series, n_seasonal_av)
+p_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(p_time_series, p_seasonal_av)
+T_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(T_time_series, T_seasonal_av)
+n_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(n_time_series, n_seasonal_av)
 
 plot_1d(p_seasonal_av, p_seasonal_av_diff, 'p [HPa]')
 plot_1d(T_seasonal_av, T_seasonal_av_diff, '%sT [K]' %delta)
 plot_1d(n_seasonal_av, n_seasonal_av_diff, 'n [$\mathregular{m^{-3}}$]')
-#plot_2d(T_seasonal_av, 'Temperature')
+
+#plot_2d(p_seasonal_av, 'p')
+#plot_2d(T_seasonal_av, 'T')
+#plot_2d(n_seasonal_av, 'n')
