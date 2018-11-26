@@ -4,6 +4,7 @@ import netCDF4
 import numpy as np
 from datetime import date
 import calendar
+import matplotlib.gridspec as gridspec
 
 deg = unichr(176)
 delta = unichr(916)
@@ -17,10 +18,12 @@ n = np.zeros([96])
 p_time_series = np.zeros([177,96])
 T_time_series = np.zeros([177,96])
 n_time_series = np.zeros([177,96])
-
 p_seasonal_av = np.zeros([12,96])
 T_seasonal_av = np.zeros([12,96])
 n_seasonal_av = np.zeros([12,96])
+p_baseline = np.zeros([12])
+T_baseline = np.zeros([12])
+n_baseline = np.zeros([12])
 p_seasonal_av_diff = np.zeros([14,12])
 T_seasonal_av_diff = np.zeros([14,12])
 n_seasonal_av_diff = np.zeros([14,12])
@@ -106,12 +109,15 @@ def make_seasonal_av_arrays(param):
         param_seasonal_av[i,:] = calc_mthly_means(param, i)
     return param_seasonal_av
 
+def make_baseline_array(param):
+    baseline = np.mean(param, axis=1)
+    return baseline
+
 def make_seasonal_av_diff_arrays(param0, param1):
-    baseline = np.zeros([12])
+    baseline = make_baseline_array(param1)
     param_time_series_set_year = np.zeros([14,12,96])
     param_time_series_set_year_lat_av = np.zeros([14,12])
     param_seasonal_av_diff = np.zeros([14,12]) 
-    baseline = np.mean(param1, axis=1)
     step = np.arange(0, 180, 12)
     for i in range(0,14): 
         param_time_series_set_year[i,:,:] = param0[step[i]:step[i+1],:]
@@ -120,27 +126,32 @@ def make_seasonal_av_diff_arrays(param0, param1):
         param_seasonal_av_diff[i,:] = param_time_series_set_year_lat_av[i,:] - baseline
     return param_seasonal_av_diff
 
-def plot_1d(param0, param1, label, altitude):
-    plt.figure(figsize=(8,4))
-    #baseline = np.zeros([12])
-    #baseline = np.mean(param0, axis=1)
+def plot_1d(param, label, altitude, plot_no):
+    plt.subplot(gs1[plot_no])
     months = np.arange(0,12,1)
     x = months
     years = ['2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013']
     colors_light = ['#f44336', '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#cddc39', '#ffeb3b', '#ff9800', '#795548', '#9e9e9e', '#607d8b']
-    #plt.plot(x, baseline)
-    for i in range(0,14):
-        y = param1[i,:]
-        plt.plot(x, y, color=colors_light[i], label=years[i])
+    if plot_no % 2 == 0:
+        y = param
+        plt.plot(x, y, color='k')
+        plt.ylabel('%s' %label)
+    else:
+        for i in range(0,14):
+            y = param[i,:]
+            plt.plot(x, y, color=colors_light[i], label=years[i])
+    if plot_no < 2:
+        plt.tick_params(labelbottom='off')
+    else:
+        plt.xlabel('Month')
+    if plot_no == 0:
+        plt.title('14-year seasonal baseline (%sm)' %altitude)
+    if plot_no == 1:
+        plt.title('Yearly difference from baseline')
+        plt.legend(bbox_to_anchor=(1.1, 0.7))
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     plt.xticks(months, labels, rotation='45')
     plt.yticks()
-    plt.xlabel('Month')
-    plt.ylabel('%s' %label)
-    plt.legend(bbox_to_anchor=(1.05, 1.01))
-    plt.title('Difference from 2000-14 seasonal mean (%s m)' %altitude)
-    #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/diff_from_seasonal_mean', bbox_inches='tight', dpi=300)
-    plt.show()
     return
 
 def plot_2d(param, label):
@@ -174,13 +185,22 @@ p_seasonal_av[:,:] = make_seasonal_av_arrays(p_time_series)
 T_seasonal_av[:,:] = make_seasonal_av_arrays(T_time_series)
 n_seasonal_av[:,:] = make_seasonal_av_arrays(n_time_series)
 
+p_baseline[:] = make_baseline_array(p_seasonal_av)
+T_baseline[:] = make_baseline_array(T_seasonal_av)
+n_baseline[:] = make_baseline_array(n_seasonal_av)
+
 p_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(p_time_series, p_seasonal_av)
 T_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(T_time_series, T_seasonal_av)
 n_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(n_time_series, n_seasonal_av)
 
-plot_1d(p_seasonal_av, p_seasonal_av_diff, 'p [HPa]', altitude)
-plot_1d(T_seasonal_av, T_seasonal_av_diff, '%sT [K]' %delta, altitude)
-plot_1d(n_seasonal_av, n_seasonal_av_diff, 'n [$\mathregular{m^{-3}}$]', altitude)
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(9,6))
+gs1 = gridspec.GridSpec(2, 2)
+plot_1d(T_baseline, 'T [K]', altitude, 0)
+plot_1d(T_seasonal_av_diff, '%sT [K]' %delta, altitude, 1)
+plot_1d(n_baseline, 'n [$\mathregular{m^{-3}}$]', altitude, 2)
+plot_1d(n_seasonal_av_diff, '%sn [$\mathregular{m^{-3}}$]' %delta, altitude, 3)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/seasonal_mean_diff_T_n_%sm' %altitude, bbox_inches='tight', dpi=300)
+plt.show()
 
 #plot_2d(p_seasonal_av, 'p', altitude)
 #plot_2d(T_seasonal_av, 'T', altitude)
