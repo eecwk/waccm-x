@@ -145,7 +145,7 @@ def plot_1d(param, label, altitude, plot_no):
     else:
         plt.xlabel('Month')
     if plot_no == 0:
-        plt.title('14-year seasonal baseline (%sm)' %altitude)
+        plt.title('14-year seasonal baseline (%s km)' %altitude_km)
     if plot_no == 1:
         plt.title('Yearly difference from baseline')
         plt.legend(bbox_to_anchor=(1.1, 0.7))
@@ -175,7 +175,8 @@ def plot_2d(param, label):
     plt.show()
     return
 
-altitude = 200000
+altitude = 250000
+altitude_km = altitude/1000
 
 p_time_series = make_time_series_arrays('p', altitude)
 T_time_series = make_time_series_arrays('T', altitude)
@@ -199,7 +200,7 @@ plot_1d(T_baseline, 'T [K]', altitude, 0)
 plot_1d(T_seasonal_av_diff, '%sT [K]' %delta, altitude, 1)
 plot_1d(n_baseline, 'n [$\mathregular{m^{-3}}$]', altitude, 2)
 plot_1d(n_seasonal_av_diff, '%sn [$\mathregular{m^{-3}}$]' %delta, altitude, 3)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/seasonal_mean_diff_T_n_%sm' %altitude, bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/seasonal_mean_diff_T_n_%skm' %altitude_km, bbox_inches='tight', dpi=300)
 plt.show()
 
 #plot_2d(p_seasonal_av, 'p', altitude)
