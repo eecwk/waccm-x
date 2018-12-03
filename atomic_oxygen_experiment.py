@@ -37,17 +37,6 @@ def calc_species_zon_av(month, symbol, levs):
     fname.close()
     return species_zon_av
 
-#waccmx_species_int = np.zeros([70,96])
-'''
-def interp_waccmx_species(z3_1, z3_2, data_2):
-    waccm_z3_rev = waccm_z3[::-1]
-    waccmx_z3_rev = waccmx_z3[::-1]
-    waccmx_species_rev = waccmx_species[::-1]
-    for i in range(0,70):  
-        for j in range(0,96):
-            waccmx_species_int[i,j] = np.interp(waccm_z3_rev[i], waccmx_z3_rev[:], waccmx_species_rev[:,j])     
-    return data_int
-'''
 def interp_waccmx_species(z3_1, z3_2, species_2):
     species_2_int = np.zeros([70,96])
     species_2_int_rev = np.zeros([70,96])
@@ -65,10 +54,8 @@ def calc_diff(param1, param2):
     for i in range(0, 70):
         for j in range(0, 96): 
             diff[i,j] = ( (param2[i,j] - param1[i,j]) / param1[i,j] ) * 100
-    #diff = ( (param2 - param1) / param1 ) * 100
             #if diff[i,j] > 500:
                 #diff[i,j] = 500
-    
     return diff
 
 def plot_2d(z3, species, plot_no):
@@ -83,70 +70,33 @@ def plot_2d(z3, species, plot_no):
     diffs_per = np.arange(-120,121,1)
     if plot_no == 0:
         ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs, norm=colors.LogNorm())
+        #ax = plt.contourf(x[:,:], y[:,:], species[:,:], norm=colors.LogNorm())
         plt.title('WACCM')
         plt.ylabel('Altitude [km]', fontsize=12)
     elif plot_no == 1:
         ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs, norm=colors.LogNorm())
+        #ax = plt.contourf(x[:,:], y[:,:], species[:,:], norm=colors.LogNorm())
         plt.title('WACCM-X')
         plt.tick_params(labelleft='off')
         cbar_ax = fig.add_axes([0.94, 0.15, 0.02, 0.7])
-        cbar = fig.colorbar(ax, cax=cbar_ax, ticks=[1.e+0, 1.e+1, 1.e+2, 1.e+3, 1.e+4, 1.e+5, 1.e+6], orientation='vertical')
+        #cbar = fig.colorbar(ax, cax=cbar_ax, ticks=[1.e+0, 1.e+1, 1.e+2, 1.e+3, 1.e+4, 1.e+5, 1.e+6], orientation='vertical')
+        cbar = fig.colorbar(ax, cax=cbar_ax, orientation='vertical')
         cbar.set_label('Atomic Oxygen vmr [ppmv]', fontsize=12)
         cbar.ax.tick_params(labelsize=12)
     elif plot_no == 2:
         ax2 = plt.contourf(x[:,:], y[:,:], species[:,:], diffs_per, cmap=plt.get_cmap('seismic'))
-        plt.title('% Difference')
+        #ax2 = plt.contourf(x[:,:], y[:,:], species[:,:], cmap=plt.get_cmap('seismic'))
+        plt.title('WACCM to WACCM-X Difference')
         plt.tick_params(labelleft='off')
         cbar_ax2 = fig.add_axes([1.05, 0.15, 0.02, 0.7])
         cbar2 = fig.colorbar(ax2, cax=cbar_ax2, orientation='vertical')
-        cbar2.set_label('% Difference', fontsize=12)
+        cbar2.set_label('[%]', fontsize=12)
         cbar2.ax.tick_params(labelsize=12)
     return
 
-'''
-cbar_ax = fig.add_axes([0.77, 0.415, 0.04, 0.5])
-cbar = fig.colorbar(ax1, cax=cbar_ax, ticks=[1.e-2, 1.e-1, 1.e+0, 1.e+1, 1.e+2], orientation='vertical')
-cbar.set_label('$\mathregular{N_2O}$ vmr [ppbv]', fontsize=setsize)
-cbar.ax.tick_params(labelsize=setno)
-cbar_ax2 = fig.add_axes([0.77, 0.082, 0.04, 0.23])
-cbar2 = fig.colorbar(ax3, cax=cbar_ax2, ticks=[-450, -300, -150, 0, 150, 300, 450], orientation='vertical')
-cbar2.set_label('[%]', fontsize=setsize)
-cbar2.ax.tick_params(labelsize=setno)
-'''
-
-
-
-'''
-def plot_2d(z3, species, plot_no):
-    plt.subplot(gs1[plot_no])
-    x, y = np.meshgrid(lats, z3)
-    plt.xlabel('Latitude [%s]' %deg, fontsize=12)
-    plt.xticks(np.arange(-90,120,30), fontsize=12) 
-    plt.yticks(np.arange(0,220,20), fontsize=12)   
-    plt.ylim(80,200)
-    plt.axhline(y=146, color='w', linewidth=1, linestyle=':')
-    diffs = [1.e+2, 175.e+0, 25.e+1, 325.e+0, 4.e+2, 475.e+0, 55.e+1, 625.e+0, 7.e+2, 775.e+0, 85.e+1, 925.e+0, 1.e+3, 175.e+1, 25.e+2, 325.e+1, 4.e+3, 475.e+1, 55.e+2, 625.e+1, 7.e+3, 775.e+1, 85.e+2, 925.e+1, 1.e+4, 175.e+2, 25.e+3, 325.e+2, 4.e+4, 475.e+2, 55.e+3, 625.e+2, 7.e+4, 775.e+2, 85.e+3, 925.e+2, 1.e+5, 175.e+3, 25.e+4, 325.e+3, 4.e+5, 475.e+3, 55.e+4, 625.e+3, 7.e+5, 775.e+3, 85.e+4, 925.e+3, 1.e+6]
-    if plot_no == 0:
-        ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs, norm=colors.LogNorm())
-        plt.title('WACCM')
-        plt.ylabel('Altitude [km]', fontsize=12)
-    elif plot_no == 1:
-        ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs, norm=colors.LogNorm())
-        plt.title('WACCM-X')
-        plt.tick_params(labelleft='off')
-    elif plot_no == 2:
-        ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs, norm=colors.LogNorm())
-        plt.title('WACCM-X Int')
-        plt.tick_params(labelleft='off')
-        cbar_ax = fig.add_axes([0.94, 0.15, 0.02, 0.7])
-        cbar = fig.colorbar(ax, cax=cbar_ax, ticks=[1.e+0, 1.e+1, 1.e+2, 1.e+3, 1.e+4, 1.e+5, 1.e+6], orientation='vertical')
-        cbar.set_label('Atomic Oxygen vmr [ppmv]', fontsize=12)
-        cbar.ax.tick_params(labelsize=12)
-        return
-'''
-
-
-month = 7
+month = 1
+species = 'atomic_oxygen'
+symbol = 'O'
 
 fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
 gs1 = gridspec.GridSpec(1, 3)
@@ -157,18 +107,15 @@ if month == 1:
 elif month == 7:
     fig.suptitle('July', fontsize=16)
 
-waccm_z3 = calc_z3_zon_av(month, 'O', 70)
-waccmx_z3 = calc_z3_zon_av(month, 'O', 145)
-waccm_species = calc_species_zon_av(month, 'O', 70)
-waccmx_species = calc_species_zon_av(month, 'O', 145)
+waccm_z3 = calc_z3_zon_av(month, symbol, 70)
+waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
+waccm_species = calc_species_zon_av(month, symbol, 70)
+waccmx_species = calc_species_zon_av(month, symbol, 145)
 waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
-#diff = calc_diff(waccm_species[::-1], waccmx_species_int)
-#diff = calc_diff(waccm_species, waccmx_species_int[::-1])
 diff = calc_diff(waccm_species, waccmx_species_int)
 plot_2d(waccm_z3, waccm_species, 0)
 plot_2d(waccmx_z3, waccmx_species, 1)
 plot_2d(waccm_z3, diff, 2)
-#plot_2d(waccm_z3, waccmx_species_int[::-1], 2)
 
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/.jpg' %name, dpi=300)
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/%s_month%s.jpg' %(species, month), bbox_inches='tight', dpi=300)
 plt.show()
