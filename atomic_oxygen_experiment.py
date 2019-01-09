@@ -15,10 +15,10 @@ lats = fname_uni.variables['lat'][:]
 fname_uni.close()
 
 def calc_z3_zon_av(month, symbol, levs):  
-    if levs == 70:
-        fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/Tao_Na_Paper_FW5_JCMIFd5.cam.h0.0001-0%s.nc' %month, 'r', format='NETCDF4')
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
     if levs == 145:
-        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2001-0%s.nc' %month, 'r', format='NETCDF4')
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
     z3 = np.zeros([1,levs,96,144])
     z3[:] = fname.variables['Z3'][:]*(1.e-3)
     z3_zon_av = np.mean(z3[:], axis=3)
@@ -28,10 +28,10 @@ def calc_z3_zon_av(month, symbol, levs):
     return z3_zon_mer_t_av
 
 def calc_species_zon_av(month, symbol, levs):  
-    if levs == 70:
-        fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/Tao_Na_Paper_FW5_JCMIFd5.cam.h0.0001-0%s.nc' %month, 'r', format='NETCDF4')
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
     if levs == 145:
-        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2001-0%s.nc' %month, 'r', format='NETCDF4') 
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2004-0%s.nc' %month, 'r', format='NETCDF4') 
     species_dat = np.zeros([1,levs,96,144]) 
     species_dat = fname.variables[symbol][:]*(1.e6)
     species_tm = np.mean(species_dat[:], axis=0)
@@ -40,24 +40,22 @@ def calc_species_zon_av(month, symbol, levs):
     return species_zon_av
 
 def interp_waccmx_species(z3_1, z3_2, species_2):
-    species_2_int = np.zeros([70,96])
-    species_2_int_rev = np.zeros([70,96])
+    species_2_int = np.zeros([88,96])
+    species_2_int_rev = np.zeros([88,96])
     z3_1_rev = z3_1[::-1]
     z3_2_rev = z3_2[::-1]
     species_2_rev = species_2[::-1]
-    for i in range(0,70):  
+    for i in range(0,88):  
         for j in range(0,96):
             species_2_int[i,j] = np.interp(z3_1_rev[i], z3_2_rev[:], species_2_rev[:,j]) 
             species_2_int_rev = species_2_int[::-1]
     return species_2_int_rev
 
 def calc_diff(param1, param2): 
-    diff = np.zeros([70,96])
-    for i in range(0, 70):
-        for j in range(0, 96): 
+    diff = np.zeros([88,96])
+    for i in range(0,88):
+        for j in range(0,96): 
             diff[i,j] = ( (param2[i,j] - param1[i,j]) / param1[i,j] ) * 100
-            #if diff[i,j] > 500:
-                #diff[i,j] = 500
     return diff
 
 def plot_2d(name, z3, species, plot_no):
@@ -77,10 +75,10 @@ def plot_2d(name, z3, species, plot_no):
         cbar_ticks = [1.e-8, 1.e-7, 1.e-6, 1.e-5, 1.e-4, 1.e-3, 1.e-2, 1.e-1, 1.e+0, 1.e+1]
         plot = 'log'
     elif name == 'atomic_hydrogen':
-        diffs = np.arange(1,61,1)
-        cbar_ticks = np.arange(5,65,5)
+        diffs = np.arange(1,91,1)
+        cbar_ticks = np.arange(10,100,10)
         plot = 'linear'
-    diffs_per = np.arange(-400,401,1)
+    diffs_per = np.arange(-200,201,1)
     if plot_no == 0:
         if plot == 'linear':
             ax = plt.contourf(x[:,:], y[:,:], species[:,:], diffs)
@@ -100,12 +98,12 @@ def plot_2d(name, z3, species, plot_no):
         cbar.set_label('%s [ppmv]' %name, fontsize=12)
         cbar.ax.tick_params(labelsize=12)
     elif plot_no == 2:
-        ax2 = plt.contourf(x[:,:], y[:,:], species[:,:], diffs_per, cmap=plt.get_cmap('seismic'))
+        ax2 = plt.contourf(x[:,:], y[:,:], species[:,:], diffs_per, extend='both', cmap=plt.get_cmap('seismic'))
         plt.title('WACCM to WACCM-X Difference')
         plt.tick_params(labelleft='off')
         cbar_ax2 = fig.add_axes([1.05, 0.15, 0.02, 0.7])
-        #cbar2 = fig.colorbar(ax2, cax=cbar_ax2, ticks=np.arange(-200,250,50), orientation='vertical')
-        cbar2 = fig.colorbar(ax2, cax=cbar_ax2, ticks=np.arange(-400,500,100), orientation='vertical')
+        cbar2 = fig.colorbar(ax2, cax=cbar_ax2, ticks=np.arange(-200,250,50), orientation='vertical')
+        cbar2.cmap.set_under('#001648')
         cbar2.set_label('[%]', fontsize=12)
         cbar2.ax.tick_params(labelsize=12)
     return
@@ -119,13 +117,13 @@ gs1 = gridspec.GridSpec(1, 3)
 gs1.update(wspace=0.1, hspace=0.1)
 
 if month == 1:
-    fig.suptitle('January', fontsize=16)
+    fig.suptitle('January 2004', fontsize=16)
 elif month == 7:
-    fig.suptitle('July', fontsize=16)
+    fig.suptitle('July 2004', fontsize=16)
 
-waccm_z3 = calc_z3_zon_av(month, symbol, 70)
+waccm_z3 = calc_z3_zon_av(month, symbol, 88)
 waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
-waccm_species = calc_species_zon_av(month, symbol, 70)
+waccm_species = calc_species_zon_av(month, symbol, 88)
 waccmx_species = calc_species_zon_av(month, symbol, 145)
 waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
 diff = calc_diff(waccm_species, waccmx_species_int)
@@ -133,5 +131,5 @@ plot_2d(name, waccm_z3, waccm_species, 0)
 plot_2d(name, waccmx_z3, waccmx_species, 1)
 plot_2d(name, waccm_z3, diff, 2)
 
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
 plt.show()
