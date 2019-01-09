@@ -79,10 +79,15 @@ def plot_1d(name, config, z3, species, color, plot_no):
     x = species[::-1]
     y = z3[::-1]
     plt.plot(x, y, color=color, label=config)
-    plt.xscale('log')
-    plt.ylim(90,150)
     plt.xlabel('%s [ppmv]' %name, fontsize=12)
     plt.ylabel('Altitude [km]', fontsize=12)
+    plt.ylim(90,150)
+    if name == 'atomic_oxygen':
+        plt.xlim(0,500000)
+    if name == 'ozone':
+        plt.xscale('log')
+    if name == 'atomic_hydrogen':
+        plt.xlim(0,30)
     if plot_no == 1:
         plt.legend()
     return
@@ -138,9 +143,9 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
-month = 1
-name = species_list[1]
-symbol = symbol_list[1]
+month = 7
+name = species_list[2]
+symbol = symbol_list[2]
 
 #fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
 #gs1 = gridspec.GridSpec(1, 3)
@@ -152,9 +157,9 @@ symbol = symbol_list[1]
 #    fig.suptitle('July 2004', fontsize=16)
 
 if month == 1:
-    plt.title('January 2004', fontsize=16)
+    plt.title('January 2004 Global', fontsize=16)
 elif month == 7:
-    plt.title('July 2004', fontsize=16)
+    plt.title('July 2004 Global', fontsize=16)
 
 waccm_z3 = calc_z3_zon_av(month, symbol, 88)
 waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
@@ -174,4 +179,5 @@ plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, 'b', 1)
 #plot_2d(name, waccm_z3, diff, 2)
 
 #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile.jpg' %(name, month), bbox_inches='tight', dpi=300)
 plt.show()
