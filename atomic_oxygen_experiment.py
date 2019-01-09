@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import netCDF4
 import numpy as np
 import matplotlib.gridspec as gridspec
+import math
 from matplotlib import colors
 
 deg = unichr(176)
@@ -58,6 +59,35 @@ def calc_diff(param1, param2):
             diff[i,j] = ( (param2[i,j] - param1[i,j]) / param1[i,j] ) * 100
     return diff
 
+def calc_cos_factor(param, levs, lowlat, highlat):
+    param_weighted = np.zeros(levs)    
+    for j in range (0, levs):    
+        sig_cos_x = 0
+        sig_cos = 0
+        for k in range (lowlat, highlat):
+            sig_cos_x = sig_cos_x + (math.cos(math.radians(lats[k])) * param[j][k])
+            sig_cos = sig_cos + math.cos(math.radians(lats[k]))         
+            if  k == (highlat - 1):
+                param_weighted[j] = sig_cos_x / sig_cos
+    return param_weighted
+
+def calc_profiles(param, levs, lowlat, highlat):
+    param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
+    return param_weighted
+    
+def plot_1d(name, config, z3, species, color, plot_no):
+    x = species[::-1]
+    y = z3[::-1]
+    plt.plot(x, y, color=color, label=config)
+    plt.xscale('log')
+    plt.ylim(90,150)
+    plt.xlabel('%s [ppmv]' %name, fontsize=12)
+    plt.ylabel('Altitude [km]', fontsize=12)
+    if plot_no == 1:
+        plt.legend()
+    return
+    
+
 def plot_2d(name, z3, species, plot_no):
     plt.subplot(gs1[plot_no])
     x, y = np.meshgrid(lats, z3)
@@ -108,18 +138,23 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
-month = 7
-name = species_list[2]
-symbol = symbol_list[2]
+month = 1
+name = species_list[1]
+symbol = symbol_list[1]
 
-fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
-gs1 = gridspec.GridSpec(1, 3)
-gs1.update(wspace=0.1, hspace=0.1)
+#fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
+#gs1 = gridspec.GridSpec(1, 3)
+#gs1.update(wspace=0.1, hspace=0.1)
+
+#if month == 1:
+#    fig.suptitle('January 2004', fontsize=16)
+#elif month == 7:
+#    fig.suptitle('July 2004', fontsize=16)
 
 if month == 1:
-    fig.suptitle('January 2004', fontsize=16)
+    plt.title('January 2004', fontsize=16)
 elif month == 7:
-    fig.suptitle('July 2004', fontsize=16)
+    plt.title('July 2004', fontsize=16)
 
 waccm_z3 = calc_z3_zon_av(month, symbol, 88)
 waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
@@ -127,9 +162,16 @@ waccm_species = calc_species_zon_av(month, symbol, 88)
 waccmx_species = calc_species_zon_av(month, symbol, 145)
 waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
 diff = calc_diff(waccm_species, waccmx_species_int)
-plot_2d(name, waccm_z3, waccm_species, 0)
-plot_2d(name, waccmx_z3, waccmx_species, 1)
-plot_2d(name, waccm_z3, diff, 2)
 
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
+waccm_species_profile = calc_profiles(waccm_species, 88, 0, 96)
+waccmx_species_profile = calc_profiles(waccmx_species, 145, 0, 96)
+
+plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, 'k', 0)
+plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, 'b', 1)
+
+#plot_2d(name, waccm_z3, waccm_species, 0)
+#plot_2d(name, waccmx_z3, waccmx_species, 1)
+#plot_2d(name, waccm_z3, diff, 2)
+
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
 plt.show()
