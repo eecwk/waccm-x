@@ -5,6 +5,7 @@ import numpy as np
 from datetime import date
 import calendar
 import matplotlib.gridspec as gridspec
+import math
 
 deg = unichr(176)
 delta = unichr(916)
@@ -24,6 +25,7 @@ n_seasonal_av = np.zeros([12,96])
 p_baseline = np.zeros([12])
 T_baseline = np.zeros([12])
 n_baseline = np.zeros([12])
+#p_baseline_weighted = np.zeros([12])
 p_seasonal_av_diff = np.zeros([14,12])
 T_seasonal_av_diff = np.zeros([14,12])
 n_seasonal_av_diff = np.zeros([14,12])
@@ -109,21 +111,39 @@ def make_seasonal_av_arrays(param):
         param_seasonal_av[i,:] = calc_mthly_means(param, i)
     return param_seasonal_av
 
+def calc_cos_factor(param, lowlat, highlat):
+    param_weighted = np.zeros(12)    
+    for j in range (0, 12):    
+        sig_cos_x = 0
+        sig_cos = 0
+        for k in range (lowlat, highlat):
+            sig_cos_x = sig_cos_x + (math.cos(math.radians(lats[k])) * param[j][k])
+            sig_cos = sig_cos + math.cos(math.radians(lats[k]))         
+            if  k == (highlat - 1):
+                param_weighted[j] = sig_cos_x / sig_cos
+    return param_weighted
+
 def make_baseline_array(param):
-    baseline = np.mean(param, axis=1)
-    return baseline
+    #baseline = np.mean(param, axis=1)
+    baseline_weighted = calc_cos_factor(param, 0, 96)
+    return baseline_weighted
 
 def make_seasonal_av_diff_arrays(param0, param1):
-    baseline = make_baseline_array(param1)
+    #baseline = make_baseline_array(param1)
+    baseline_weighted = calc_cos_factor(param1, 0, 96)
     param_time_series_set_year = np.zeros([14,12,96])
-    param_time_series_set_year_lat_av = np.zeros([14,12])
+    #param_time_series_set_year_lat_av = np.zeros([14,12])
+    param_time_series_set_year_lat_av_weighted = np.zeros([14,12])
     param_seasonal_av_diff = np.zeros([14,12]) 
     step = np.arange(0, 180, 12)
     for i in range(0,14): 
         param_time_series_set_year[i,:,:] = param0[step[i]:step[i+1],:]
-    param_time_series_set_year_lat_av = np.mean(param_time_series_set_year, axis=2)
+    #param_time_series_set_year_lat_av = np.mean(param_time_series_set_year, axis=2)
+    for i in range(0,14): 
+        param_time_series_set_year_lat_av_weighted[i,:] = calc_cos_factor(param_time_series_set_year[i,:,:], 0, 96)
     for i in range(0,14):
-        param_seasonal_av_diff[i,:] = param_time_series_set_year_lat_av[i,:] - baseline
+        #param_seasonal_av_diff[i,:] = param_time_series_set_year_lat_av[i,:] - baseline
+        param_seasonal_av_diff[i,:] = param_time_series_set_year_lat_av_weighted[i,:] - baseline_weighted
     return param_seasonal_av_diff
 
 def plot_1d(param, label, altitude, plot_no):
@@ -189,6 +209,8 @@ n_seasonal_av[:,:] = make_seasonal_av_arrays(n_time_series)
 p_baseline[:] = make_baseline_array(p_seasonal_av)
 T_baseline[:] = make_baseline_array(T_seasonal_av)
 n_baseline[:] = make_baseline_array(n_seasonal_av)
+
+#p_baseline_weighted[:] = calc_cos_factor(p_seasonal_av, 0, 96)
 
 p_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(p_time_series, p_seasonal_av)
 T_seasonal_av_diff[:,:] = make_seasonal_av_diff_arrays(T_time_series, T_seasonal_av)
