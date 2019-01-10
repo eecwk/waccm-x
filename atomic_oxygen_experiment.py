@@ -143,10 +143,41 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
-month = 7
-name = species_list[2]
-symbol = symbol_list[2]
+month = 1
+name = species_list[0]
+symbol = symbol_list[0]
 
+waccm_z3 = calc_z3_zon_av(month, symbol, 88)
+waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
+waccm_species = calc_species_zon_av(month, symbol, 88)
+waccmx_species = calc_species_zon_av(month, symbol, 145)
+waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
+diff = calc_diff(waccm_species, waccmx_species_int)
+
+# 1D Plot Code
+# 90S:60S 0:16
+# 60S:30S 16:32
+# 30S:0   32:48
+# 0:30N   48:64
+# 30N:60N 64:80
+# 60N:90N 80:96
+lowlat = 0
+highlat = 16
+lowlat_no = int((lowlat * 1.875) - 90)
+highlat_no = int((highlat * 1.875) - 90)
+
+if month == 1:
+    plt.title('January 2004 %s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=16)
+elif month == 7:
+    plt.title('July 2004 Global', fontsize=16)
+
+waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
+plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, 'k', 0)
+plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, 'b', 1)
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile.jpg' %(name, month), bbox_inches='tight', dpi=300)
+
+# 2D Plot Code
 #fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
 #gs1 = gridspec.GridSpec(1, 3)
 #gs1.update(wspace=0.1, hspace=0.1)
@@ -156,28 +187,9 @@ symbol = symbol_list[2]
 #elif month == 7:
 #    fig.suptitle('July 2004', fontsize=16)
 
-if month == 1:
-    plt.title('January 2004 Global', fontsize=16)
-elif month == 7:
-    plt.title('July 2004 Global', fontsize=16)
-
-waccm_z3 = calc_z3_zon_av(month, symbol, 88)
-waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
-waccm_species = calc_species_zon_av(month, symbol, 88)
-waccmx_species = calc_species_zon_av(month, symbol, 145)
-waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
-diff = calc_diff(waccm_species, waccmx_species_int)
-
-waccm_species_profile = calc_profiles(waccm_species, 88, 0, 96)
-waccmx_species_profile = calc_profiles(waccmx_species, 145, 0, 96)
-
-plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, 'k', 0)
-plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, 'b', 1)
-
 #plot_2d(name, waccm_z3, waccm_species, 0)
 #plot_2d(name, waccmx_z3, waccmx_species, 1)
 #plot_2d(name, waccm_z3, diff, 2)
-
 #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile.jpg' %(name, month), bbox_inches='tight', dpi=300)
+
 plt.show()
