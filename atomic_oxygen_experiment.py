@@ -17,9 +17,9 @@ fname_uni.close()
 
 def calc_z3_zon_av(month, symbol, levs):  
     if levs == 88:
-        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
-        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     z3 = np.zeros([1,levs,96,144])
     z3[:] = fname.variables['Z3'][:]*(1.e-3)
     z3_zon_av = np.mean(z3[:], axis=3)
@@ -30,9 +30,9 @@ def calc_z3_zon_av(month, symbol, levs):
 
 def calc_species_zon_av(month, symbol, levs):  
     if levs == 88:
-        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.2004-0%s.nc' %month, 'r', format='NETCDF4')
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
-        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2004-0%s.nc' %month, 'r', format='NETCDF4') 
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
     species_dat = np.zeros([1,levs,96,144]) 
     species_dat = fname.variables[symbol][:]*(1.e6)
     species_tm = np.mean(species_dat[:], axis=0)
@@ -153,6 +153,7 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
+year = 2009
 month = 7
 name = species_list[2]
 symbol = symbol_list[2]
@@ -170,9 +171,9 @@ gs1 = gridspec.GridSpec(1, 3)
 gs1.update(wspace=0.1, hspace=0.1)
 
 if month == 1:
-    plt.suptitle('January 2004', fontsize=16)
+    plt.suptitle('January %s' %year, fontsize=16)
 elif month == 7:
-    plt.suptitle('July 2004', fontsize=16)
+    plt.suptitle('July %s' %year, fontsize=16)
 
 step = 16
 
@@ -187,9 +188,8 @@ for i in range(3,6):
     waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
     plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
     plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile_SH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile_NH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
-
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/solarmin_2009/%s_month%s_profile_SH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/solarmin_2009/%s_month%s_profile_NH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
 
 # 2D Plot Code
 #fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
