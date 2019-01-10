@@ -75,21 +75,31 @@ def calc_profiles(param, levs, lowlat, highlat):
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     return param_weighted
     
-def plot_1d(name, config, z3, species, color, plot_no):
+def plot_1d(name, config, z3, species, lowlat, highlat, color, plot_no):
+    if plot_no > 2:
+        plot_no = plot_no - 3
+    plt.subplot(gs1[plot_no])
+    plt.title('%s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
     x = species[::-1]
     y = z3[::-1]
     plt.plot(x, y, color=color, label=config)
     plt.xlabel('%s [ppmv]' %name, fontsize=12)
-    plt.ylabel('Altitude [km]', fontsize=12)
     plt.ylim(90,150)
+    if plot_no == 0:
+        plt.ylabel('Altitude [km]', fontsize=12)
+    if plot_no == 1:
+        plt.tick_params(labelleft='off')
+    if plot_no == 2:
+        plt.tick_params(labelleft='off')
     if name == 'atomic_oxygen':
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         plt.xlim(0,500000)
     if name == 'ozone':
         plt.xscale('log')
     if name == 'atomic_hydrogen':
         plt.xlim(0,30)
-    if plot_no == 1:
-        plt.legend()
+    if config == 'waccm-x' and plot_no == 2:
+        plt.legend(loc=4)
     return
     
 
@@ -143,9 +153,9 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
-month = 1
-name = species_list[0]
-symbol = symbol_list[0]
+month = 7
+name = species_list[2]
+symbol = symbol_list[2]
 
 waccm_z3 = calc_z3_zon_av(month, symbol, 88)
 waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
@@ -155,27 +165,31 @@ waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
 diff = calc_diff(waccm_species, waccmx_species_int)
 
 # 1D Plot Code
-# 90S:60S 0:16
-# 60S:30S 16:32
-# 30S:0   32:48
-# 0:30N   48:64
-# 30N:60N 64:80
-# 60N:90N 80:96
-lowlat = 0
-highlat = 16
-lowlat_no = int((lowlat * 1.875) - 90)
-highlat_no = int((highlat * 1.875) - 90)
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
+gs1 = gridspec.GridSpec(1, 3)
+gs1.update(wspace=0.1, hspace=0.1)
 
 if month == 1:
-    plt.title('January 2004 %s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=16)
+    plt.suptitle('January 2004', fontsize=16)
 elif month == 7:
-    plt.title('July 2004 Global', fontsize=16)
+    plt.suptitle('July 2004', fontsize=16)
 
-waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
-waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
-plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, 'k', 0)
-plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, 'b', 1)
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile.jpg' %(name, month), bbox_inches='tight', dpi=300)
+step = 16
+
+for i in range(3,6):
+    
+    lowlat = i * step
+    highlat = (i * step) + step
+    lowlat_no = int((lowlat * 1.875) - 90)
+    highlat_no = int((highlat * 1.875) - 90)
+
+    waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+    waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
+    plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
+    plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile_SH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s_profile_NH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
+
 
 # 2D Plot Code
 #fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
