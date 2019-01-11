@@ -121,7 +121,7 @@ def plot_2d(name, z3, species, plot_no):
         plot = 'log'
     elif name == 'atomic_hydrogen':
         diffs = np.arange(1,91,1)
-        cbar_ticks = np.arange(10,100,10)
+        cbar_ticks = np.arange(0,100,10)
         plot = 'linear'
     diffs_per = np.arange(-200,201,1)
     if plot_no == 0:
@@ -153,7 +153,7 @@ def plot_2d(name, z3, species, plot_no):
         cbar2.ax.tick_params(labelsize=12)
     return
 
-year = 2009
+year = 2014
 month = 7
 name = species_list[2]
 symbol = symbol_list[2]
@@ -188,22 +188,23 @@ for i in range(3,6):
     waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
     plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
     plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/solarmin_2009/%s_month%s_profile_SH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/solarmin_2009/%s_month%s_profile_NH_bands.jpg' %(name, month), bbox_inches='tight', dpi=300)
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
 
+'''
 # 2D Plot Code
-#fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
-#gs1 = gridspec.GridSpec(1, 3)
-#gs1.update(wspace=0.1, hspace=0.1)
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
+gs1 = gridspec.GridSpec(1, 3)
+gs1.update(wspace=0.1, hspace=0.1)
 
-#if month == 1:
-#    fig.suptitle('January 2004', fontsize=16)
-#elif month == 7:
-#    fig.suptitle('July 2004', fontsize=16)
+if month == 1:
+    fig.suptitle('January %s' %year, fontsize=16)
+elif month == 7:
+    fig.suptitle('July %s' %year, fontsize=16)
 
-#plot_2d(name, waccm_z3, waccm_species, 0)
-#plot_2d(name, waccmx_z3, waccmx_species, 1)
-#plot_2d(name, waccm_z3, diff, 2)
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s_month%s.jpg' %(name, month), bbox_inches='tight', dpi=300)
-
+plot_2d(name, waccm_z3, waccm_species, 0)
+plot_2d(name, waccmx_z3, waccmx_species, 1)
+plot_2d(name, waccm_z3, diff, 2)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+'''
 plt.show()
