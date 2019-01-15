@@ -12,12 +12,15 @@ N_A = 6.02214086e+23
 R = 8.3144598
 species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen']
 symbol_list = ['O', 'O3', 'H']
+p_level = np.zeros([177,96])
+T_level = np.zeros([177,96])
+n_level = np.zeros([177,96])
 
 fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/zonal_means/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
 lats = fname_uni.variables['lat'][:]
 fname_uni.close()
 
-def calc_z3_zon_av(month, symbol, levs):  
+def calc_z3_zon_mer_t_av(month, symbol, levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
@@ -29,6 +32,18 @@ def calc_z3_zon_av(month, symbol, levs):
     z3_zon_mer_t_av = np.mean(z3_zon_mer_av[:], axis=0) 
     fname.close()
     return z3_zon_mer_t_av
+
+def calc_z3_zon_t_av(month, symbol, levs):  
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    if levs == 145:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    z3 = np.zeros([1,levs,96,144])
+    z3[:] = fname.variables['Z3'][:]*(1.e-3)
+    z3_zon_av = np.mean(z3[:], axis=3)
+    z3_zon_t_av = np.mean(z3_zon_av[:], axis=0) 
+    fname.close()
+    return z3_zon_t_av
 
 def calc_species_zon_av(month, symbol, levs):  
     if levs == 88:
@@ -73,26 +88,42 @@ def calc_cos_factor(param, levs, lowlat, highlat):
                 param_weighted[j] = sig_cos_x / sig_cos
     return param_weighted
 
+#def interp_lev(altitude, gpheight):
+#    for i in range(0,96):
+#        lev_int[i] = np.interp(altitude, gpheight[:,i][::-1], levs[:][::-1])     
+#    return lev_int
+
+def calc_z3_zon_t_av_weighted(month, levs, lowlat, highlat):
+    z3_zon_t_av = calc_z3_zon_t_av(month, symbol, levs)
+    z3_zon_t_av_weighted = calc_cos_factor(z3_zon_t_av, levs, lowlat, highlat)
+    return z3_zon_t_av_weighted
+
 def calc_profiles(param, levs, lowlat, highlat):
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     return param_weighted
 
-def calc_conc_profiles(param, levs, lowlat, highlat):
+def calc_conc_profiles(month, symbol, param, levs, lowlat, highlat):
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
+    lev = np.zeros([levs])
+    lev = fname.variables['lev'][:]
+    #lev_weighted = calc_cos_factor(lev, levs, lowlat, highlat)
+    #for i in range(0,levs):
+    #    lev_int = interp_lev(z3_zon_t_av_weighted[i][::-1], z3_zon_t_av_weighted[::-1], lev[::-1]) 
     T = np.zeros([1,levs,96,144])
     T = fname.variables['T'][:]
     T_t_av = np.mean(T[:], axis=0)
     T_zon_t_av = np.mean(T_t_av[:], axis=2)
-    T_zon_mer_t_av = np.mean(T_zon_t_av, axis=1)   
-    lev = np.zeros([levs])
-    lev = fname.variables['lev'][:]
+    T_zon_t_av_weighted = calc_cos_factor(T_zon_t_av, levs, lowlat, highlat)   
+    #T_zon_mer_t_av = np.mean(T_zon_t_av, axis=1)   
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     param_weighted_conc = np.zeros(levs)  
     for i in range(0,levs):
-        param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev[i]) / (R * T_zon_mer_t_av[i]) * (1.e-6)
+        #param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev_weighted[i]) / (R * T_zon_mer_t_av[i]) * (1.e-6)
+        param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev[i]) / (R * T_zon_t_av_weighted[i]) * (1.e-6)
+    fname.close()
     return param_weighted_conc
     
     
@@ -179,8 +210,9 @@ month = 1
 name = species_list[0]
 symbol = symbol_list[0]
 
-waccm_z3 = calc_z3_zon_av(month, symbol, 88)
-waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
+waccm_z3 = calc_z3_zon_mer_t_av(month, symbol, 88)
+waccmx_z3 = calc_z3_zon_mer_t_av(month, symbol, 145)
+
 waccm_species = calc_species_zon_av(month, symbol, 88)
 waccmx_species = calc_species_zon_av(month, symbol, 145)
 waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
@@ -205,13 +237,18 @@ for i in range(0,3):
     lowlat_no = int((lowlat * 1.875) - 90)
     highlat_no = int((highlat * 1.875) - 90)
 
+    waccm_z3_weighted = calc_z3_zon_t_av_weighted(month, 88, lowlat, highlat)
+    waccmx_z3_weighted = calc_z3_zon_t_av_weighted(month, 145, lowlat, highlat)
+
     #waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
     #waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
-    waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
-    waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)    
+    waccm_species_profile = calc_conc_profiles(month, symbol, waccm_species, 88, lowlat, highlat)
+    waccmx_species_profile = calc_conc_profiles(month, symbol, waccmx_species, 145, lowlat, highlat)    
     
-    plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
-    plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
+    #plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
+    #plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
+    plot_1d(name, 'waccm', waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
+    plot_1d(name, 'waccm-x', waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
 #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
 #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
 
