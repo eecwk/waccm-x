@@ -8,6 +8,8 @@ from matplotlib import colors
 deg = unichr(176)
 delta = unichr(916)
 k_B = 1.38064852e-23
+N_A = 6.02214086e+23
+R = 8.3144598
 species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen']
 symbol_list = ['O', 'O3', 'H']
 
@@ -74,6 +76,25 @@ def calc_cos_factor(param, levs, lowlat, highlat):
 def calc_profiles(param, levs, lowlat, highlat):
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     return param_weighted
+
+def calc_conc_profiles(param, levs, lowlat, highlat):
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    if levs == 145:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
+    T = np.zeros([1,levs,96,144])
+    T = fname.variables['T'][:]
+    T_t_av = np.mean(T[:], axis=0)
+    T_zon_t_av = np.mean(T_t_av[:], axis=2)
+    T_zon_mer_t_av = np.mean(T_zon_t_av, axis=1)   
+    lev = np.zeros([levs])
+    lev = fname.variables['lev'][:]
+    param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
+    param_weighted_conc = np.zeros(levs)  
+    for i in range(0,levs):
+        param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev[i]) / (R * T_zon_mer_t_av[i]) * (1.e-6)
+    return param_weighted_conc
+    
     
 def plot_1d(name, config, z3, species, lowlat, highlat, color, plot_no):
     if plot_no > 2:
@@ -93,7 +114,7 @@ def plot_1d(name, config, z3, species, lowlat, highlat, color, plot_no):
         plt.tick_params(labelleft='off')
     if name == 'atomic_oxygen':
         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-        plt.xlim(0,500000)
+        #plt.xlim(0,500000)
     if name == 'ozone':
         plt.xscale('log')
     if name == 'atomic_hydrogen':
@@ -154,9 +175,9 @@ def plot_2d(name, z3, species, plot_no):
     return
 
 year = 2014
-month = 7
-name = species_list[2]
-symbol = symbol_list[2]
+month = 1
+name = species_list[0]
+symbol = symbol_list[0]
 
 waccm_z3 = calc_z3_zon_av(month, symbol, 88)
 waccmx_z3 = calc_z3_zon_av(month, symbol, 145)
@@ -177,19 +198,22 @@ elif month == 7:
 
 step = 16
 
-for i in range(3,6):
+for i in range(0,3):
     
     lowlat = i * step
     highlat = (i * step) + step
     lowlat_no = int((lowlat * 1.875) - 90)
     highlat_no = int((highlat * 1.875) - 90)
 
-    waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
-    waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
+    #waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+    #waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
+    waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
+    waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)    
+    
     plot_1d(name, 'waccm', waccm_z3, waccm_species_profile, lowlat, highlat, 'k', i)
     plot_1d(name, 'waccm-x', waccmx_z3, waccmx_species_profile, lowlat, highlat, 'b', i)
 #plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
 
 '''
 # 2D Plot Code
