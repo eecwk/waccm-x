@@ -117,6 +117,25 @@ def calc_conc_profiles(month, symbol, param, levs, lowlat, highlat):
         param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev[i]) / (R * T_zon_t_av_weighted[i]) * (1.e-6)
     fname.close()
     return param_weighted_conc
+
+def plot_1d_global(name, config, units, z3, species, color, plot_no):
+    x = species[::-1]
+    y = z3[::-1]
+    plt.plot(x, y, color=color, label=config)
+    plt.xlabel('%s [%s]' %(name, units), fontsize=12)
+    plt.ylabel('Altitude [km]', fontsize=12)
+    plt.ylim(0,150)
+    if name == 'atomic_oxygen':
+        1==1
+        #plt.xlim(0,500000)
+    if name == 'ozone':
+        plt.xscale('log')
+    if name == 'atomic_hydrogen':
+        1==1
+        #plt.xlim(0,30)
+    if plot_no == 1:
+        plt.legend()
+    return
        
 def plot_1d(name, config, units, z3, species, lowlat, highlat, color, plot_no):
     if plot_no > 2:
@@ -127,7 +146,7 @@ def plot_1d(name, config, units, z3, species, lowlat, highlat, color, plot_no):
     y = z3[::-1]
     plt.plot(x, y, color=color, label=config)
     plt.xlabel('%s [%s]' %(name, units), fontsize=12)
-    plt.ylim(90,150)
+    plt.ylim(0,150)
     if plot_no == 0:
         plt.ylabel('Altitude [km]', fontsize=12)
     if plot_no == 1:
@@ -203,6 +222,35 @@ month = 7
 name = species_list[0]
 symbol = symbol_list[0]
 units = units_list[1]
+global_lats = True
+sh = False
+nh = False
+save = False
+
+if global_lats == True:
+    if month == 1:
+        plt.title('January %s Global' %year , fontsize=16)
+    elif month == 7:
+        plt.title('July %s Global' %year, fontsize=16)
+    step = 96
+    a = 0
+    b = 1
+else:
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
+    gs1 = gridspec.GridSpec(1, 3)
+    gs1.update(wspace=0.1, hspace=0.1)
+    if month == 1:
+        plt.suptitle('January %s' %year, fontsize=16)
+    elif month == 7:
+        plt.suptitle('July %s' %year, fontsize=16)
+    step = 16
+
+if sh == True:
+    a = 0
+    b = 3
+if nh == True:
+    a = 3
+    b = 6
 
 # Update for 2D Plot Code:
 #waccm_z3 = calc_z3_zon_mer_t_av(month, symbol, 88)
@@ -216,18 +264,7 @@ waccmx_species = calc_species_zon_av(month, symbol, 145)
 #diff = calc_diff(waccm_species, waccmx_species_int)
 
 # 1D Plot Code
-fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
-gs1 = gridspec.GridSpec(1, 3)
-gs1.update(wspace=0.1, hspace=0.1)
-
-if month == 1:
-    plt.suptitle('January %s' %year, fontsize=16)
-elif month == 7:
-    plt.suptitle('July %s' %year, fontsize=16)
-
-step = 16
-
-for i in range(3,6):
+for i in range(a,b):
     
     lowlat = i * step
     highlat = (i * step) + step
@@ -242,12 +279,22 @@ for i in range(3,6):
         waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
     elif units == '$\mathregular{cm^{-3}}$':
         waccm_species_profile = calc_conc_profiles(month, symbol, waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_conc_profiles(month, symbol, waccmx_species, 145, lowlat, highlat)    
+        waccmx_species_profile = calc_conc_profiles(month, symbol, waccmx_species, 145, lowlat, highlat) 
 
-    plot_1d(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
-    plot_1d(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
-#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+    if global_lats == True:
+        plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
+        plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
+    else:
+        plot_1d(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
+        plot_1d(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
+
+if save == True:
+    if global_lats == True:
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+    if sh == True:
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+    if nh == True:
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
 '''
 # 2D Plot Code
 fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
