@@ -167,6 +167,47 @@ def plot_1d(name, config, units, z3, species, lowlat, highlat, color, plot_no):
         plt.legend(loc=1)
     return
 
+def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot_no):
+    if plot_no > 5:
+        plot_no = plot_no - 6
+    plt.subplot(gs1[plot_no])
+    plt.title('%s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
+    x = species[::-1]
+    y = z3[::-1]
+    plt.plot(x, y, color=color, label=config)
+    plt.ylim(60,160)
+    if plot_no == 0:
+        plt.ylabel('Altitude [km]', fontsize=12)
+        plt.tick_params(labelbottom='off')
+    if plot_no == 1:
+        plt.tick_params(labelleft='off')
+        plt.tick_params(labelbottom='off')
+    if plot_no == 2:
+        plt.tick_params(labelleft='off')
+        plt.tick_params(labelbottom='off')
+    if plot_no == 3:
+        plt.xlabel('%s [%s]' %(name, units), fontsize=12)
+        plt.ylabel('Altitude [km]', fontsize=12)
+    if plot_no == 4:
+        plt.xlabel('%s [%s]' %(name, units), fontsize=12)
+        plt.tick_params(labelleft='off')
+    if plot_no == 5:
+        plt.xlabel('%s [%s]' %(name, units), fontsize=12)
+        plt.tick_params(labelleft='off')
+    if name == 'atomic_oxygen':
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        if units == 'ppmv':
+            plt.xlim(0,500000)
+        if units == '$\mathregular{cm^{-3}}$':    
+            plt.xlim(8,8.e+11)
+    if name == 'ozone':
+        plt.xscale('log')
+    if name == 'atomic_hydrogen':
+        1==1
+    if config == 'waccm-x' and plot_no == 2:
+        plt.legend(loc=1)
+    return
+
 def plot_2d(name, z3, species, plot_no):
     plt.subplot(gs1[plot_no])
     x, y = np.meshgrid(lats, z3)
@@ -218,14 +259,15 @@ def plot_2d(name, z3, species, plot_no):
     return
 
 year = 2014
-month = 7
+month = 1
 name = species_list[0]
 symbol = symbol_list[0]
-units = units_list[1]
+units = units_list[0]
 global_lats = False
-sh = True
+sh = False
 nh = False
-save = False
+multi = True
+save = True
 
 if units == 'ppmv':
     units_print = 'ppmv'
@@ -240,6 +282,17 @@ if global_lats == True:
     step = 96
     a = 0
     b = 1
+if multi == True:
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(11,8))
+    gs1 = gridspec.GridSpec(2, 3)
+    gs1.update(wspace=0.1, hspace=0.1)
+    if month == 1:
+        plt.suptitle('January %s' %year, fontsize=16)
+    elif month == 7:
+        plt.suptitle('July %s' %year, fontsize=16)
+    step = 16
+    a = 0
+    b = 6
 else:
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
     gs1 = gridspec.GridSpec(1, 3)
@@ -289,6 +342,9 @@ for i in range(a,b):
     if global_lats == True:
         plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
         plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
+    if multi == True:
+        plot_1d_multi(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
+        plot_1d_multi(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)        
     else:
         plot_1d(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
         plot_1d(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
@@ -296,6 +352,8 @@ for i in range(a,b):
 if save == True:
     if global_lats == True:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
+    if multi == True:
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_lat_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
     if sh == True:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
     if nh == True:
