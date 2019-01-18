@@ -146,7 +146,7 @@ def plot_1d(name, config, units, z3, species, lowlat, highlat, color, plot_no):
     y = z3[::-1]
     plt.plot(x, y, color=color, label=config)
     plt.xlabel('%s [%s]' %(name, units), fontsize=12)
-    plt.ylim(0,150)
+    plt.ylim(60,160)
     if plot_no == 0:
         plt.ylabel('Altitude [km]', fontsize=12)
     if plot_no == 1:
@@ -222,10 +222,15 @@ month = 7
 name = species_list[0]
 symbol = symbol_list[0]
 units = units_list[1]
-global_lats = True
-sh = False
+global_lats = False
+sh = True
 nh = False
 save = False
+
+if units == 'ppmv':
+    units_print = 'ppmv'
+elif units == '$\mathregular{cm^{-3}}$':
+    units_print = 'cm-3'
 
 if global_lats == True:
     if month == 1:
@@ -290,11 +295,11 @@ for i in range(a,b):
 
 if save == True:
     if global_lats == True:
-        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
     if sh == True:
-        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
     if nh == True:
-        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands_cm-3.jpg' %(year, name, month), bbox_inches='tight', dpi=300)
+        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
 '''
 # 2D Plot Code
 fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
