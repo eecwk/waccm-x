@@ -96,19 +96,22 @@ def calc_z3_zon_t_av_weighted(levs, lowlat, highlat):
     z3_zon_t_av_weighted = calc_cos_factor(z3_zon_t_av, levs, lowlat, highlat)
     return z3_zon_t_av_weighted
 
-def calc_density(T, levs, lowlat, highlat):
+def get_lev(levs):
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
     lev = np.zeros([levs])
     lev = fname.variables['lev'][:]
+    fname.close()
+    return lev
+
+def calc_density(T, levs, lowlat, highlat):
+    lev = get_lev(levs)
     T_weighted = calc_cos_factor(T, levs, lowlat, highlat)
     n_weighted = np.zeros(levs)
     for i in range(0,levs):
-        #n_weighted[i] = (lev[i] * 100) / (T_weighted[i] * k_B)
         n_weighted[i] = (N_A * 100 * lev[i]) / (R * T_weighted[i]) * (1.e-6)
-    fname.close()
     return n_weighted
 
 def calc_profiles(param, levs, lowlat, highlat):
@@ -119,22 +122,13 @@ def calc_profiles(param, levs, lowlat, highlat):
     return param_weighted
 
 def calc_conc_profiles(param, levs, lowlat, highlat):
-    if levs == 88:
-        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
-    if levs == 145:
-        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
-    lev = np.zeros([levs])
-    lev = fname.variables['lev'][:]
-    T = np.zeros([1,levs,96,144])
-    T = fname.variables['T'][:]
-    T_t_av = np.mean(T[:], axis=0)
-    T_zon_t_av = np.mean(T_t_av[:], axis=2)
+    lev = get_lev(levs)
+    T_zon_t_av = calc_species_zon_av('T', levs)
     T_zon_t_av_weighted = calc_cos_factor(T_zon_t_av, levs, lowlat, highlat)    
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     param_weighted_conc = np.zeros(levs)  
     for i in range(0,levs):
         param_weighted_conc[i] = (param_weighted[i] * 1.e-6 * N_A * 100 * lev[i]) / (R * T_zon_t_av_weighted[i]) * (1.e-6)
-    fname.close()
     return param_weighted_conc
 
 def plot_1d_global(name, config, units, z3, species, color, plot_no):
@@ -162,6 +156,10 @@ def plot_1d_global(name, config, units, z3, species, color, plot_no):
             plt.xlim(0,5.e+8)
     if name == 'temperature':
         1==1
+    if name == 'density':
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.ylim(100,160)
+        plt.xlim(0,3.e+12)
     if plot_no == 1:
         plt.legend()
     return
@@ -276,7 +274,7 @@ name = species_list[4]
 symbol = symbol_list[4]
 units = units_list[1]
 chemistry = False
-global_only = False
+global_only = True
 save = False
 
 if units == 'ppmv':
@@ -348,6 +346,7 @@ if save == True:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_lat_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
 '''
 # 2D Plot Code
+# Currently for chemistry only
 fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
 gs1 = gridspec.GridSpec(1, 3)
 gs1.update(wspace=0.1, hspace=0.1)
