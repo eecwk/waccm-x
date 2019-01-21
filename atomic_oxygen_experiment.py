@@ -22,20 +22,20 @@ lats = fname_uni.variables['lat'][:]
 fname_uni.close()
 
 # Update for 2D Plot Code:
-#def calc_z3_zon_mer_t_av(month, symbol, levs):  
-#    if levs == 88:
-#        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
-#    if levs == 145:
-#        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
-#    z3 = np.zeros([1,levs,96,144])
-#    z3[:] = fname.variables['Z3'][:]*(1.e-3)
-#    z3_zon_av = np.mean(z3[:], axis=3)
-#    z3_zon_mer_av = np.mean(z3_zon_av[:], axis=2)
-#    z3_zon_mer_t_av = np.mean(z3_zon_mer_av[:], axis=0) 
-#    fname.close()
-#    return z3_zon_mer_t_av
+def calc_z3_zon_mer_t_av(levs):  
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    if levs == 145:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    z3 = np.zeros([1,levs,96,144])
+    z3[:] = fname.variables['Z3'][:]*(1.e-3)
+    z3_zon_av = np.mean(z3[:], axis=3)
+    z3_zon_mer_av = np.mean(z3_zon_av[:], axis=2)
+    z3_zon_mer_t_av = np.mean(z3_zon_mer_av[:], axis=0) 
+    fname.close()
+    return z3_zon_mer_t_av
 
-def calc_z3_zon_t_av(month, symbol, levs):  
+def calc_z3_zon_t_av(levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
@@ -47,7 +47,7 @@ def calc_z3_zon_t_av(month, symbol, levs):
     fname.close()
     return z3_zon_t_av
 
-def calc_species_zon_av(month, symbol, levs):  
+def calc_species_zon_av(symbol, levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
@@ -90,8 +90,8 @@ def calc_cos_factor(param, levs, lowlat, highlat):
                 param_weighted[j] = sig_cos_x / sig_cos
     return param_weighted
 
-def calc_z3_zon_t_av_weighted(month, levs, lowlat, highlat):
-    z3_zon_t_av = calc_z3_zon_t_av(month, symbol, levs)
+def calc_z3_zon_t_av_weighted(levs, lowlat, highlat):
+    z3_zon_t_av = calc_z3_zon_t_av(levs)
     z3_zon_t_av_weighted = calc_cos_factor(z3_zon_t_av, levs, lowlat, highlat)
     return z3_zon_t_av_weighted
 
@@ -99,7 +99,7 @@ def calc_profiles(param, levs, lowlat, highlat):
     param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     return param_weighted
 
-def calc_conc_profiles(month, symbol, param, levs, lowlat, highlat):
+def calc_conc_profiles(param, levs, lowlat, highlat):
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
@@ -124,47 +124,25 @@ def plot_1d_global(name, config, units, z3, species, color, plot_no):
     plt.plot(x, y, color=color, label=config)
     plt.xlabel('%s [%s]' %(name, units), fontsize=12)
     plt.ylabel('Altitude [km]', fontsize=12)
-    plt.ylim(0,150)
-    if name == 'atomic_oxygen':
-        1==1
-        #plt.xlim(0,500000)
-    if name == 'ozone':
-        plt.xscale('log')
-    if name == 'atomic_hydrogen':
-        1==1
-        #plt.xlim(0,30)
-    if plot_no == 1:
-        plt.legend()
-    return
-       
-def plot_1d(name, config, units, z3, species, lowlat, highlat, color, plot_no):
-    if plot_no > 2:
-        plot_no = plot_no - 3
-    plt.subplot(gs1[plot_no])
-    plt.title('%s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
-    x = species[::-1]
-    y = z3[::-1]
-    plt.plot(x, y, color=color, label=config)
-    plt.xlabel('%s [%s]' %(name, units), fontsize=12)
     plt.ylim(60,160)
-    if plot_no == 0:
-        plt.ylabel('Altitude [km]', fontsize=12)
-    if plot_no == 1:
-        plt.tick_params(labelleft='off')
-    if plot_no == 2:
-        plt.tick_params(labelleft='off')
     if name == 'atomic_oxygen':
-        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         if units == 'ppmv':
             plt.xlim(0,500000)
         if units == '$\mathregular{cm^{-3}}$':    
-            plt.xlim(8,8.e+11)
+            plt.xlim(0,8.e+11)
     if name == 'ozone':
         plt.xscale('log')
+        if units == 'ppmv':
+            plt.xlim(1.e-8,1.e+1)
+        if units == '$\mathregular{cm^{-3}}$':    
+            plt.xlim(1.e-4,1.e+12)
     if name == 'atomic_hydrogen':
-        1==1
-    if config == 'waccm-x' and plot_no == 2:
-        plt.legend(loc=1)
+        if units == 'ppmv':
+            plt.xlim(0,20)
+        if units == '$\mathregular{cm^{-3}}$':    
+            plt.xlim(0,5.e+8)
+    if plot_no == 1:
+        plt.legend()
     return
 
 def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot_no):
@@ -199,11 +177,18 @@ def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot
         if units == 'ppmv':
             plt.xlim(0,500000)
         if units == '$\mathregular{cm^{-3}}$':    
-            plt.xlim(8,8.e+11)
+            plt.xlim(0,8.e+11)
     if name == 'ozone':
         plt.xscale('log')
+        if units == 'ppmv':
+            plt.xlim(1.e-8,1.e+1)
+        if units == '$\mathregular{cm^{-3}}$':    
+            plt.xlim(1.e-4,1.e+12)
     if name == 'atomic_hydrogen':
-        1==1
+        if units == 'ppmv':
+            plt.xlim(0,20)
+        if units == '$\mathregular{cm^{-3}}$':    
+            plt.xlim(0,5.e+8)
     if config == 'waccm-x' and plot_no == 2:
         plt.legend(loc=1)
     return
@@ -263,18 +248,15 @@ month = 1
 name = species_list[0]
 symbol = symbol_list[0]
 units = units_list[0]
-global_lats = False
-sh = False
-nh = False
-multi = True
-save = True
+global_only = False
+save = False
 
 if units == 'ppmv':
     units_print = 'ppmv'
 elif units == '$\mathregular{cm^{-3}}$':
     units_print = 'cm-3'
 
-if global_lats == True:
+if global_only == True:
     if month == 1:
         plt.title('January %s Global' %year , fontsize=16)
     elif month == 7:
@@ -282,7 +264,7 @@ if global_lats == True:
     step = 96
     a = 0
     b = 1
-if multi == True:
+else:
     fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(11,8))
     gs1 = gridspec.GridSpec(2, 3)
     gs1.update(wspace=0.1, hspace=0.1)
@@ -293,71 +275,41 @@ if multi == True:
     step = 16
     a = 0
     b = 6
-else:
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
-    gs1 = gridspec.GridSpec(1, 3)
-    gs1.update(wspace=0.1, hspace=0.1)
-    if month == 1:
-        plt.suptitle('January %s' %year, fontsize=16)
-    elif month == 7:
-        plt.suptitle('July %s' %year, fontsize=16)
-    step = 16
 
-if sh == True:
-    a = 0
-    b = 3
-if nh == True:
-    a = 3
-    b = 6
+waccm_z3 = calc_z3_zon_mer_t_av(88)
+waccmx_z3 = calc_z3_zon_mer_t_av(145)
 
-# Update for 2D Plot Code:
-#waccm_z3 = calc_z3_zon_mer_t_av(month, symbol, 88)
-#waccmx_z3 = calc_z3_zon_mer_t_av(month, symbol, 145)
+waccm_species = calc_species_zon_av(symbol, 88)
+waccmx_species = calc_species_zon_av(symbol, 145)
 
-waccm_species = calc_species_zon_av(month, symbol, 88)
-waccmx_species = calc_species_zon_av(month, symbol, 145)
-
-# Update for 2D Plot Code:
-#waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
-#diff = calc_diff(waccm_species, waccmx_species_int)
+waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
+diff = calc_diff(waccm_species, waccmx_species_int)
 
 # 1D Plot Code
-for i in range(a,b):
-    
+for i in range(a,b):    
     lowlat = i * step
     highlat = (i * step) + step
     lowlat_no = int((lowlat * 1.875) - 90)
     highlat_no = int((highlat * 1.875) - 90)
-
-    waccm_z3_weighted = calc_z3_zon_t_av_weighted(month, 88, lowlat, highlat)
-    waccmx_z3_weighted = calc_z3_zon_t_av_weighted(month, 145, lowlat, highlat)
-    
+    waccm_z3_weighted = calc_z3_zon_t_av_weighted(88, lowlat, highlat)
+    waccmx_z3_weighted = calc_z3_zon_t_av_weighted(145, lowlat, highlat)    
     if units == 'ppmv':
         waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
         waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
     elif units == '$\mathregular{cm^{-3}}$':
-        waccm_species_profile = calc_conc_profiles(month, symbol, waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_conc_profiles(month, symbol, waccmx_species, 145, lowlat, highlat) 
-
-    if global_lats == True:
+        waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
+        waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat) 
+    if global_only == True:
         plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
         plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
-    if multi == True:
-        plot_1d_multi(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
-        plot_1d_multi(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)        
     else:
-        plot_1d(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
-        plot_1d(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
-
+        plot_1d_multi(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
+        plot_1d_multi(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
 if save == True:
-    if global_lats == True:
+    if global_only == True:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
-    if multi == True:
+    else:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_lat_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
-    if sh == True:
-        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_SH_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
-    if nh == True:
-        plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_NH_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
 '''
 # 2D Plot Code
 fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(11,5))
