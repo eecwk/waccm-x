@@ -10,9 +10,9 @@ delta = unichr(916)
 k_B = 1.38064852e-23
 N_A = 6.02214086e+23
 R = 8.3144598
-species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen']
-symbol_list = ['O', 'O3', 'H']
-units_list = ['ppmv', '$\mathregular{cm^{-3}}$']
+species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen', 'temperature']
+symbol_list = ['O', 'O3', 'H', 'T']
+units_list = ['ppmv', '$\mathregular{cm^{-3}}$', 'K']
 p_level = np.zeros([177,96])
 T_level = np.zeros([177,96])
 n_level = np.zeros([177,96])
@@ -21,7 +21,6 @@ fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave
 lats = fname_uni.variables['lat'][:]
 fname_uni.close()
 
-# Update for 2D Plot Code:
 def calc_z3_zon_mer_t_av(levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
@@ -52,8 +51,11 @@ def calc_species_zon_av(symbol, levs):
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
-    species_dat = np.zeros([1,levs,96,144]) 
-    species_dat = fname.variables[symbol][:]*(1.e6)
+    species_dat = np.zeros([1,levs,96,144])
+    if symbol == 'T':
+        species_dat = fname.variables[symbol][:]
+    else:
+       species_dat = fname.variables[symbol][:]*(1.e6) 
     species_tm = np.mean(species_dat[:], axis=0)
     species_zon_av = np.mean(species_tm[:], axis=2)
     fname.close()
@@ -141,6 +143,8 @@ def plot_1d_global(name, config, units, z3, species, color, plot_no):
             plt.xlim(0,20)
         if units == '$\mathregular{cm^{-3}}$':    
             plt.xlim(0,5.e+8)
+    if name == 'temperature':
+        1==1
     if plot_no == 1:
         plt.legend()
     return
@@ -189,6 +193,8 @@ def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot
             plt.xlim(0,20)
         if units == '$\mathregular{cm^{-3}}$':    
             plt.xlim(0,5.e+8)
+    if name == 'temperature':
+        1==1
     if config == 'waccm-x' and plot_no == 2:
         plt.legend(loc=1)
     return
@@ -245,9 +251,9 @@ def plot_2d(name, z3, species, plot_no):
 
 year = 2014
 month = 1
-name = species_list[0]
-symbol = symbol_list[0]
-units = units_list[0]
+name = species_list[3]
+symbol = symbol_list[3]
+units = units_list[2]
 global_only = False
 save = False
 
@@ -298,7 +304,10 @@ for i in range(a,b):
         waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
     elif units == '$\mathregular{cm^{-3}}$':
         waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat) 
+        waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)
+    elif units == 'K':
+        waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+        waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)        
     if global_only == True:
         plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
         plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
