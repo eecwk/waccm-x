@@ -10,12 +10,9 @@ delta = unichr(916)
 k_B = 1.38064852e-23
 N_A = 6.02214086e+23
 R = 8.3144598
-species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen', 'temperature']
-symbol_list = ['O', 'O3', 'H', 'T']
+species_list = ['atomic_oxygen', 'ozone', 'atomic_hydrogen', 'temperature', 'density']
+symbol_list = ['O', 'O3', 'H', 'T', 'n']
 units_list = ['ppmv', '$\mathregular{cm^{-3}}$', 'K']
-p_level = np.zeros([177,96])
-T_level = np.zeros([177,96])
-n_level = np.zeros([177,96])
 
 fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/zonal_means/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
 lats = fname_uni.variables['lat'][:]
@@ -46,6 +43,18 @@ def calc_z3_zon_t_av(levs):
     fname.close()
     return z3_zon_t_av
 
+def calc_cos_factor(param, levs, lowlat, highlat):
+    param_weighted = np.zeros(levs)    
+    for j in range (0, levs):    
+        sig_cos_x = 0
+        sig_cos = 0
+        for k in range (lowlat, highlat):
+            sig_cos_x = sig_cos_x + (math.cos(math.radians(lats[k])) * param[j][k])
+            sig_cos = sig_cos + math.cos(math.radians(lats[k]))         
+            if  k == (highlat - 1):
+                param_weighted[j] = sig_cos_x / sig_cos
+    return param_weighted
+
 def calc_species_zon_av(symbol, levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
@@ -54,6 +63,8 @@ def calc_species_zon_av(symbol, levs):
     species_dat = np.zeros([1,levs,96,144])
     if symbol == 'T':
         species_dat = fname.variables[symbol][:]
+    elif symbol == 'n':
+        species_dat = fname.variables['T'][:]
     else:
        species_dat = fname.variables[symbol][:]*(1.e6) 
     species_tm = np.mean(species_dat[:], axis=0)
@@ -80,25 +91,31 @@ def calc_diff(param1, param2):
             diff[i,j] = ( (param2[i,j] - param1[i,j]) / param1[i,j] ) * 100
     return diff
 
-def calc_cos_factor(param, levs, lowlat, highlat):
-    param_weighted = np.zeros(levs)    
-    for j in range (0, levs):    
-        sig_cos_x = 0
-        sig_cos = 0
-        for k in range (lowlat, highlat):
-            sig_cos_x = sig_cos_x + (math.cos(math.radians(lats[k])) * param[j][k])
-            sig_cos = sig_cos + math.cos(math.radians(lats[k]))         
-            if  k == (highlat - 1):
-                param_weighted[j] = sig_cos_x / sig_cos
-    return param_weighted
-
 def calc_z3_zon_t_av_weighted(levs, lowlat, highlat):
     z3_zon_t_av = calc_z3_zon_t_av(levs)
     z3_zon_t_av_weighted = calc_cos_factor(z3_zon_t_av, levs, lowlat, highlat)
     return z3_zon_t_av_weighted
 
+def calc_density(T, levs, lowlat, highlat):
+    if levs == 88:
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
+    if levs == 145:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4') 
+    lev = np.zeros([levs])
+    lev = fname.variables['lev'][:]
+    T_weighted = calc_cos_factor(T, levs, lowlat, highlat)
+    n_weighted = np.zeros(levs)
+    for i in range(0,levs):
+        #n_weighted[i] = (lev[i] * 100) / (T_weighted[i] * k_B)
+        n_weighted[i] = (N_A * 100 * lev[i]) / (R * T_weighted[i]) * (1.e-6)
+    fname.close()
+    return n_weighted
+
 def calc_profiles(param, levs, lowlat, highlat):
-    param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
+    if symbol == 'n':
+        param_weighted = calc_density(param, levs, lowlat, highlat)
+    else:
+        param_weighted = calc_cos_factor(param, levs, lowlat, highlat)
     return param_weighted
 
 def calc_conc_profiles(param, levs, lowlat, highlat):
@@ -195,6 +212,10 @@ def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot
             plt.xlim(0,5.e+8)
     if name == 'temperature':
         1==1
+    if name == 'density':
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.ylim(100,160)
+        plt.xlim(0,3.e+12)
     if config == 'waccm-x' and plot_no == 2:
         plt.legend(loc=1)
     return
@@ -251,9 +272,10 @@ def plot_2d(name, z3, species, plot_no):
 
 year = 2014
 month = 1
-name = species_list[3]
-symbol = symbol_list[3]
-units = units_list[2]
+name = species_list[4]
+symbol = symbol_list[4]
+units = units_list[1]
+chemistry = False
 global_only = False
 save = False
 
@@ -282,14 +304,14 @@ else:
     a = 0
     b = 6
 
-waccm_z3 = calc_z3_zon_mer_t_av(88)
-waccmx_z3 = calc_z3_zon_mer_t_av(145)
+#waccm_z3 = calc_z3_zon_mer_t_av(88)
+#waccmx_z3 = calc_z3_zon_mer_t_av(145)
 
 waccm_species = calc_species_zon_av(symbol, 88)
 waccmx_species = calc_species_zon_av(symbol, 145)
 
-waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
-diff = calc_diff(waccm_species, waccmx_species_int)
+#waccmx_species_int = interp_waccmx_species(waccm_z3, waccmx_z3, waccmx_species)
+#diff = calc_diff(waccm_species, waccmx_species_int)
 
 # 1D Plot Code
 for i in range(a,b):    
@@ -299,15 +321,20 @@ for i in range(a,b):
     highlat_no = int((highlat * 1.875) - 90)
     waccm_z3_weighted = calc_z3_zon_t_av_weighted(88, lowlat, highlat)
     waccmx_z3_weighted = calc_z3_zon_t_av_weighted(145, lowlat, highlat)    
-    if units == 'ppmv':
-        waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
-    elif units == '$\mathregular{cm^{-3}}$':
-        waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)
-    elif units == 'K':
-        waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
-        waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)        
+    if chemistry == True:
+        if units == 'ppmv':
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
+        elif units == '$\mathregular{cm^{-3}}$':
+            waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
+            waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)
+    else:
+        if symbol == 'T':
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat) 
+        elif symbol == 'n':
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)        
     if global_only == True:
         plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
         plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
