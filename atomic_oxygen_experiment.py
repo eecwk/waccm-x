@@ -16,6 +16,7 @@ units_list = ['ppmv', '$\mathregular{cm^{-3}}$', 'K']
 
 fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/zonal_means/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
 lats = fname_uni.variables['lat'][:]
+lons = fname_uni.variables['lon'][:]
 fname_uni.close()
 
 def calc_z3_zon_mer_t_av(levs):  
@@ -205,11 +206,14 @@ def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot
         if units == '$\mathregular{cm^{-3}}$':    
             plt.xlim(0,8.e+11)
     if name == 'ozone':
-        plt.xscale('log')
+        #plt.xscale('log')
+        #plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         if units == 'ppmv':
             plt.xlim(1.e-8,1.e+1)
-        if units == '$\mathregular{cm^{-3}}$':    
-            plt.xlim(1.e-4,1.e+12)
+        if units == '$\mathregular{cm^{-3}}$':
+            plt.ylim(77,100)
+            #plt.xlim(1.e-4,1.e+12)
+            plt.xlim(0,7.e+8)
     if name == 'atomic_hydrogen':
         if units == 'ppmv':
             plt.xlim(0,20)
@@ -223,7 +227,7 @@ def plot_1d_multi(name, config, units, z3, species, lowlat, highlat, color, plot
         if units == '$\mathregular{cm^{-3}}$':    
             plt.xlim(0,1.e+13)    
     if name == 'temperature':
-        1==1
+        plt.xlim(0,800)
     if name == 'density':
         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         plt.ylim(100,160)
@@ -264,7 +268,6 @@ def plot_1d_ratio(name, config, units, z3, species, lowlat, highlat, color, plot
         plt.legend(loc=1)
     return
 
-    
 def plot_2d(name, z3, species, plot_no):
     plt.subplot(gs1[plot_no])
     x, y = np.meshgrid(lats, z3)
@@ -317,15 +320,13 @@ def plot_2d(name, z3, species, plot_no):
 
 year = 2014
 month = 1
-name = species_list[4]
-symbol = symbol_list[4]
+name = species_list[0]
+symbol = symbol_list[0]
 units = units_list[0]
 chemistry = True
 global_only = False
 save = False
-
 # For ratio:
-ratio = True
 name2 = species_list[3]
 symbol2 = symbol_list[3]
 
@@ -333,6 +334,8 @@ if units == 'ppmv':
     units_print = 'ppmv'
 elif units == '$\mathregular{cm^{-3}}$':
     units_print = 'cm-3'
+elif units == 'K':
+    units_print = 'K'
 
 if global_only == True:
     if month == 1:
@@ -353,7 +356,7 @@ else:
     step = 16
     a = 0
     b = 6
-'''
+
 #waccm_z3 = calc_z3_zon_mer_t_av(88)
 #waccmx_z3 = calc_z3_zon_mer_t_av(145)
 
@@ -373,29 +376,30 @@ for i in range(a,b):
     waccmx_z3_weighted = calc_z3_zon_t_av_weighted(145, lowlat, highlat)    
     if chemistry == True:
         if units == 'ppmv':
-            #waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
             waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)
         elif units == '$\mathregular{cm^{-3}}$':
-            #waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
+            waccm_species_profile = calc_conc_profiles(waccm_species, 88, lowlat, highlat)
             waccmx_species_profile = calc_conc_profiles(waccmx_species, 145, lowlat, highlat)
     else:
         if symbol == 'T':
-            #waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
             waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat) 
         elif symbol == 'n':
-            #waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
+            waccm_species_profile = calc_profiles(waccm_species, 88, lowlat, highlat)
             waccmx_species_profile = calc_profiles(waccmx_species, 145, lowlat, highlat)        
     if global_only == True:
-        #plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
+        plot_1d_global(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, 'k', 0)
         plot_1d_global(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, 'b', 1)
     else:
-        #plot_1d_multi(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
+        plot_1d_multi(name, 'waccm', units, waccm_z3_weighted, waccm_species_profile, lowlat, highlat, 'k', i)
         plot_1d_multi(name, 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
 if save == True:
     if global_only == True:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_global_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
     else:
         plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_lat_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
+
 '''
 # 1D Ratio Plot Code: WACCM-X only comparison workaround for missing WACCM species
 waccmx_species = calc_species_zon_av(symbol, 145)
@@ -411,7 +415,8 @@ for i in range(a,b):
     waccmx_species_profile = calc_profiles(waccmx_ratio, 145, lowlat, highlat)      
     plot_1d_ratio('%s / %s ratio' %(symbol, symbol2), 'waccm-x', units, waccmx_z3_weighted, waccmx_species_profile, lowlat, highlat, 'b', i)
 if save == True:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_month%s_profile_lat_bands_%s.jpg' %(year, name, month, units_print), bbox_inches='tight', dpi=300)
+    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/%s_%s_ratio_month%s_profile_lat_bands.jpg' %(year, name, name2, month), bbox_inches='tight', dpi=300)
+'''
 '''
 # 2D Plot Code
 # Currently for chemistry only
