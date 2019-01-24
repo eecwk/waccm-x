@@ -9,11 +9,11 @@ lats = np.zeros([96])
 lons = np.zeros([144])
 p_int = np.zeros([96,144])
 
-fname_uni = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2000-01.nc', 'r', format='NETCDF4')
-levs = fname_uni.variables['lev'][:]
-lats = fname_uni.variables['lat'][:]
-lons = fname_uni.variables['lon'][:]
-fname_uni.close()
+def get_fixed_variables(year, month, symbol):
+    fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
+    var = fname.variables[symbol][:]
+    fname.close()
+    return var
 
 def get_variables(config, year, month, symbol):
     if config == 'waccmx':
@@ -42,9 +42,8 @@ def interp_tracer(tracer):
             tracer_int[i,j] = np.interp(p_int[i,j], levs[:], tracer[:,i,j])
     return tracer_int
 
-def plot_2d_latlon(tracer, name, units):
+def plot_2d_latlon(tracer, diffs, name, units):
     x, y = np.meshgrid(lons, lats)
-    diffs = np.arange(0,3.0,0.1)
     plt.contourf(x[:,:], y[:,:], tracer[:,:], diffs)
     plt.xlabel('Longitude [%s]' %deg, fontsize=12)
     plt.ylabel('Latitude [%s]' %deg, fontsize=12)
@@ -54,9 +53,23 @@ def plot_2d_latlon(tracer, name, units):
     cbar.set_label('%s [%s]' %(name, units), fontsize=12)
     plt.show()
 
-altitude = 95000
-z3 = get_variables('waccmx', '2014', '01', 'Z3')
-o3 = get_variables('waccmx', '2014', '01', 'O3')
+year = '2014'
+month = '01'
+altitude = 120000
+
+levs = get_fixed_variables(year, month, 'lev')
+lats = get_fixed_variables(year, month, 'lat')
+lons = get_fixed_variables(year, month, 'lon')
+
+z3 = get_variables('waccmx', year, month, 'Z3')
 p_int[:,:] = interp_p(altitude, z3)
-o3_int = interp_tracer(o3*1.e+6)
-plot_2d_latlon(o3_int, 'ozone', 'ppmv')
+
+o = get_variables('waccmx', year, month, 'O')
+o_int = interp_tracer(o*1.e+6)
+diffs = np.arange(180000,340000,5000)
+plot_2d_latlon(o_int, diffs, 'atomic_oxygen', 'ppmv')
+
+#o3 = get_variables('waccmx', year, month, 'O')
+#o3_int = interp_tracer(o3*1.e+6)
+#diffs = np.arange(0,3.0,0.1)
+#plot_2d_latlon(o3_int, diffs, 'ozone', 'ppmv')
