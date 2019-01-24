@@ -15,7 +15,21 @@ lats = fname_uni.variables['lat'][:]
 lons = fname_uni.variables['lon'][:]
 fname_uni.close()
 
-def interp_p(altitude, gpheight):
+def get_variables(config, year, month, symbol):
+    if config == 'waccmx':
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
+        tracer_dat = np.zeros([1,145,96,144])
+        tracer = np.zeros([145,96,144])
+    if config == 'waccm':
+        fname == 1
+        tracer_dat = np.zeros([1,88,96,144])
+        tracer = np.zeros([88,96,144])
+    tracer_dat = fname.variables[symbol][:]
+    tracer = np.mean(tracer_dat, axis=0)
+    fname.close()
+    return tracer
+
+def interp_p(altitude, gpheight):        
     for i in range(0,96):
         for j in range(0,144):
             p_int[i,j] = np.interp(altitude, gpheight[:,i,j][::-1], levs[:][::-1])     
@@ -27,24 +41,6 @@ def interp_tracer(tracer):
         for j in range(0,144):    
             tracer_int[i,j] = np.interp(p_int[i,j], levs[:], tracer[:,i,j])
     return tracer_int
-    
-def calc_tracer_tmean(symbol):
-    tracer_dat = np.zeros([1,145,96,144])
-    tracer = np.zeros([145,96,144])
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2014-01.nc', 'r', format='NETCDF4')
-    tracer_dat = fname.variables[symbol][:]*(1.e+6)
-    tracer = np.mean(tracer_dat, axis=0)
-    return tracer
-    
-def make_arrays(fixed_altitude):
-    z3_dat = np.zeros([1,145,96,144])
-    z3 = np.zeros([145,96,144])
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.2014-01.nc', 'r', format='NETCDF4')
-    z3_dat = fname.variables['Z3'][:]
-    z3 = np.mean(z3_dat, axis=0)
-    fname.close()            
-    p_int[:,:] = interp_p(fixed_altitude, z3)
-    return p_int
 
 def plot_2d_latlon(tracer, name, units):
     x, y = np.meshgrid(lons, lats)
@@ -59,7 +55,8 @@ def plot_2d_latlon(tracer, name, units):
     plt.show()
 
 altitude = 95000
-p_int = make_arrays(altitude)
-ozone = calc_tracer_tmean('O3')
-ozone_int = interp_tracer(ozone)
-plot_2d_latlon(ozone_int, 'ozone', 'ppmv')
+z3 = get_variables('waccmx', '2014', '01', 'Z3')
+o3 = get_variables('waccmx', '2014', '01', 'O3')
+p_int[:,:] = interp_p(altitude, z3)
+o3_int = interp_tracer(o3*1.e+6)
+plot_2d_latlon(o3_int, 'ozone', 'ppmv')
