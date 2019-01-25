@@ -3,27 +3,24 @@ import netCDF4
 import numpy as np
 
 deg = unichr(176)
-
-levs = np.zeros([145])
-lats = np.zeros([96])
-lons = np.zeros([144])
 p_int = np.zeros([96,144])
 
-def get_fixed_variables(year, month, symbol):
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
+def get_fixed_variables(config, year, month, symbol):
+    if config == 'waccmx':
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
+    if config == 'waccm':
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')  
     var = fname.variables[symbol][:]
     fname.close()
     return var
 
-def get_variables(config, year, month, symbol):
+def get_variables(config, levs, year, month, symbol):
+    tracer_dat = np.zeros([1,levs,96,144])
+    tracer = np.zeros([levs,96,144])
     if config == 'waccmx':
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_monthly_ave/f.e20.FXSD.f19_f19.001.cam.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
-        tracer_dat = np.zeros([1,145,96,144])
-        tracer = np.zeros([145,96,144])
     if config == 'waccm':
-        fname == 1
-        tracer_dat = np.zeros([1,88,96,144])
-        tracer = np.zeros([88,96,144])
+        fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-%s.nc' %(year, month), 'r', format='NETCDF4')
     tracer_dat = fname.variables[symbol][:]
     tracer = np.mean(tracer_dat, axis=0)
     fname.close()
@@ -57,19 +54,19 @@ year = '2014'
 month = '01'
 altitude = 120000
 
-levs = get_fixed_variables(year, month, 'lev')
-lats = get_fixed_variables(year, month, 'lat')
-lons = get_fixed_variables(year, month, 'lon')
+levs = get_fixed_variables('waccmx', year, month, 'lev')
+lats = get_fixed_variables('waccmx', year, month, 'lat')
+lons = get_fixed_variables('waccmx', year, month, 'lon')
 
-z3 = get_variables('waccmx', year, month, 'Z3')
+z3 = get_variables('waccmx', 145, year, month, 'Z3')
 p_int[:,:] = interp_p(altitude, z3)
 
-o = get_variables('waccmx', year, month, 'O')
+o = get_variables('waccmx', 145, year, month, 'O')
 o_int = interp_tracer(o*1.e+6)
 diffs = np.arange(180000,340000,5000)
 plot_2d_latlon(o_int, diffs, 'atomic_oxygen', 'ppmv')
 
-#o3 = get_variables('waccmx', year, month, 'O')
+#o3 = get_variables('waccmx', 145, year, month, 'O')
 #o3_int = interp_tracer(o3*1.e+6)
 #diffs = np.arange(0,3.0,0.1)
 #plot_2d_latlon(o3_int, diffs, 'ozone', 'ppmv')
