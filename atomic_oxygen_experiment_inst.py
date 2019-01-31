@@ -18,17 +18,17 @@ lats = fname_uni.variables['lat'][:]
 lons = fname_uni.variables['lon'][:]
 fname_uni.close()
 
-def calc_z3_zon_t_av(levs):  
+def calc_z3_zon_av(levs):  
     if levs == 88:
         fname = netCDF4.Dataset('/nfs/a265/earfw/SD_WACCM4/john_ca_paper_JDmif_nad4cad7.cam2.h0.%s-0%s.nc' %(year, month), 'r', format='NETCDF4')
     if levs == 145:
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.%s-0%s-0%s-00000.nc' %(year, month, start_day), 'r', format='NETCDF4')
     z3 = np.zeros([7,levs,96,144])
     z3[:] = fname.variables['Z3'][:]*(1.e-3)
-    z3_zon_av = np.mean(z3[:], axis=3)
-    z3_zon_t_av = np.mean(z3_zon_av[:], axis=0) 
-    fname.close()
-    return z3_zon_t_av
+    z3_t = z3[2,:,:,:]
+    z3_zon_av = np.mean(z3_t, axis=2)
+    fname.close()    
+    return z3_zon_av
 
 def calc_cos_factor(param, levs, lowlat, highlat):
     param_weighted = np.zeros(levs)    
@@ -72,7 +72,7 @@ def interp_waccmx_species(z3_1, z3_2, species_2):
     return species_2_int_rev
     
 def calc_z3_zon_t_av_weighted(levs, lowlat, highlat):
-    z3_zon_t_av = calc_z3_zon_t_av(levs)
+    z3_zon_t_av = calc_z3_zon_av(levs)
     z3_zon_t_av_weighted = calc_cos_factor(z3_zon_t_av, levs, lowlat, highlat)
     return z3_zon_t_av_weighted
 
