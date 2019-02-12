@@ -72,8 +72,11 @@ def plot_2d_latlon_sub(config, tracer, diffs, name, units, plot_no):
 
 year = '2014'
 month = '01'
+#altitude = 75000
+#altitude = 85000
+altitude = 90000
 #altitude = 95000
-altitude = 85000
+#altitude = 120000
 
 levs_w = get_fixed_variables('waccm', year, month, 'lev')
 levs_wx = get_fixed_variables('waccmx', year, month, 'lev')
@@ -89,23 +92,26 @@ fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9,3))
 gs1 = gridspec.GridSpec(1, 2)
 gs1.update(wspace=0.1, hspace=0.1)
 '''
-diffs = np.arange(10000,90000,2500)
+#diffs = np.arange(10000,90000,2500)
+diffs = np.arange(160000,360000,10000)
 o_w = get_variables('waccm', 88, year, month, 'O')
 o_w_int = interp_tracer(o_w*1.e+6, levs_w, p_int_w)
 plot_2d_latlon_sub('waccm', o_w_int, diffs, 'atomic_oxygen', 'ppmv', 0)
 o_wx = get_variables('waccmx', 145, year, month, 'O')
 o_wx_int = interp_tracer(o_wx*1.e+6, levs_wx, p_int_wx)
 plot_2d_latlon_sub('waccmx', o_wx_int, diffs, 'atomic_oxygen', 'ppmv', 1)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/atomic_oxygen_month%s_95km_latlon_ppmv.jpg' %(year, month), bbox_inches='tight', dpi=300)
+plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/atomic_oxygen_month%s_120km_latlon_ppmv.jpg' %(year, month), bbox_inches='tight', dpi=300)
 '''
-diffs = np.arange(0,3.2,0.1)
+
+#diffs = np.arange(0,3.2,0.1)
+#diffs = np.arange(0,1.2,0.05)
+diffs = np.arange(0,3.6,0.1)
 o3_w = get_variables('waccm', 88, year, month, 'O3')
 o3_w_int = interp_tracer(o3_w*1.e+6, levs_w, p_int_w)
 plot_2d_latlon_sub('waccm', o3_w_int, diffs, 'ozone', 'ppmv', 0)
 o3_wx = get_variables('waccmx', 145, year, month, 'O3')
 o3_wx_int = interp_tracer(o3_wx*1.e+6, levs_wx, p_int_wx)
 plot_2d_latlon_sub('waccmx', o3_wx_int, diffs, 'ozone', 'ppmv', 1)
-plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/ozone_month%s_85km_latlon_ppmv.jpg' %(year, month), bbox_inches='tight', dpi=300)
-
+#plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/john_ca_paper_JDmif_nad4cad7/%s/ozone_month%s_90km_latlon_ppmv.jpg' %(year, month), bbox_inches='tight', dpi=300)
 
 plt.show()
