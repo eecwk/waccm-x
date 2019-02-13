@@ -22,8 +22,11 @@ fname.close()
 
 # SABER
 fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/SABER/NIGHTLY/atox_athy_night_YY%s_V5.3_fixedfnight_SV2.nc' %set_year, 'r', format='NETCDF4')
-o = fname.variables['qatox'][:]*(1.e+6)
+o = fname.variables['qatox'][:]
+T = fname.variables['ktemp'][:]
+p = fname.variables['pressure'][:]
 lats_saber = fname.variables['lat'][:]
+lons_saber = fname.variables['lon'][:]
 alt = fname.variables['alt'][:]
 year = fname.variables['year'][:]
 day = fname.variables['day'][:]
@@ -36,7 +39,8 @@ def make_saber_array(tracer, set_year, set_day):
         for k in range(0,36):            
             k_min = (k*5) - 90
             k_max = (k*5) - 85      
-            time_lat_bin = np.append(np.where((lats_saber > k_min) & (lats_saber < k_max) & (year == set_year) & (day == set_day)), True)        
+            #time_lat_bin = np.append(np.where((lats_saber > k_min) & (lats_saber < k_max) & (year == set_year) & (day == set_day)), True)
+            time_lat_bin = np.append(np.where((lons_saber > 160) & (lons_saber < 200) & (lats_saber > k_min) & (lats_saber < k_max) & (year == set_year) & (day == set_day)), True) 
             tracer_scans = tracer[time_lat_bin, j]
             tracer_scans_good = np.array([])
             for i in range(0, len(tracer_scans)):
@@ -59,6 +63,20 @@ def calc_saber_cos_factor(tracer_bin, lowlat, highlat):
             if  k == (highlat - 1):
                 tracer_weighted[j] = sig_cos_x / sig_cos
     return tracer_weighted
+
+def calc_saber_conc_profile(tracer, lowlat, highlat):
+    T_saber = make_saber_array(T, set_year, set_day)
+    T_saber_weighted = calc_saber_cos_factor(T_saber, lowlat, highlat)
+    #p_saber = make_saber_array(p, set_year, set_day)
+    #p_saber_weighted = calc_saber_cos_factor(p_saber, lowlat, highlat)
+    tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
+    tracer_weighted_conc = np.zeros(16)  
+    for i in range(0,16):
+        if T_saber_weighted[i] > 0:
+            tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * p[i]) / (R * T_saber_weighted[i])
+        else:
+            tracer_weighted_conc[i] = np.nan
+    return tracer_weighted_conc
 
 # WACCM-X
 fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.2014-01-04-00000.nc', 'r', format='NETCDF4')
@@ -93,7 +111,7 @@ def calc_waccmx_conc_profile(tracer, lowlat, highlat):
     tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
     tracer_weighted_conc = np.zeros(145)  
     for i in range(0,145):
-        tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * levs_waccmx[i]) / (R * T_waccmx_weighted[i]) * (1.e-6)
+        tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * levs_waccmx[i]) / (R * T_waccmx_weighted[i])
     return tracer_weighted_conc
 
 # Plot
@@ -108,7 +126,7 @@ def plot_1d(tracer_weighted, alt_weighted, factor, name, lowlat, highlat, config
     y = alt_weighted[::-1]
     plt.plot(x, y, color=color, label=config)
     plt.xlim(0,8.e+11)
-    #plt.ylim(77,100)
+    plt.ylim(50,200)
     plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     if plot_no == 0:
         plt.ylabel('Altitude [km]', fontsize=12)
@@ -137,9 +155,11 @@ def setup_plot_1d(tracer, alt, step, factor, name, config, units, color):
         lowlat = i * step
         highlat = (i * step) + step
         if config == 'saber':
-            saber_tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
+            #saber_tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
+            saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
             saber_alt_weighted = calc_saber_cos_factor(alt, lowlat, highlat)
-            plot_1d(saber_tracer_weighted, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            #plot_1d(saber_tracer_weighted, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            plot_1d(saber_tracer_weighted_conc, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
             #waccmx_tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
             waccmx_tracer_weighted_conc = calc_waccmx_conc_profile(tracer, lowlat, highlat)
@@ -152,16 +172,16 @@ def setup_plot_1d(tracer, alt, step, factor, name, config, units, color):
             plot_1d(msis_tracer_weighted, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)  
     return
 
-#saber_o = make_saber_array(o, set_year, set_day)
-#saber_alt = make_saber_array(alt, set_year, set_day)
-waccmx_o =  make_waccmx_array('O',1.e+6)
+saber_o = make_saber_array(o, set_year, set_day)
+saber_alt = make_saber_array(alt, set_year, set_day)
+waccmx_o =  make_waccmx_array('O',1)
 waccmx_alt =  make_waccmx_array('Z3',1.e-3)
 
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(11,8))
 gs1 = gridspec.GridSpec(2, 3)
 gs1.update(wspace=0.1, hspace=0.1)
 plt.suptitle('%s, DOY=%s, night, 180%sE' %(set_year, set_day, deg), fontsize=16)
-#setup_plot_1d(saber_o, saber_alt, 6, 5, 'atomic_oxygen', 'saber', 'ppmv', 'm')
+setup_plot_1d(saber_o, saber_alt, 6, 5, 'atomic_oxygen', 'saber', 'ppmv', 'm')
 setup_plot_1d(waccmx_o, waccmx_alt, 16, 1.875, 'atomic_oxygen', 'waccm-x', 'ppmv', 'k')
 setup_plot_1d(msis_o, waccmx_alt, 16, 1.875, 'atomic_oxygen', 'msis', 'cm-3', 'b')
 
