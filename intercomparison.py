@@ -14,37 +14,13 @@ days = [20, 21, 22, 21, 20, 21, 23, 21]
 waccmx_start_days = [14, 20, 19, 19, 15, 21, 20, 20]
 doy = [79, 172, 265, 355, 79, 172, 266, 355]
 
-event = 7
+event = 1
 set_year = years[event]
 set_month = months[event]
 set_day = days[event]
 waccmx_start_day = waccmx_start_days[event]
 saber_doy = doy[event]
 waccmx_select_day = set_day - waccmx_start_day
-'''
-set_year = 2009         # 09 09 09 09 14 14 14 14
-set_month = 6           #  3  6  9 12  3  6  9 12
-set_day = 21            # 20 21 22 21 20 21 23 21
-waccmx_start_day =  20  # 14 20 19 19 15 21 20 20
-event = 0               #  0  1  2  3  4  5  6  7
-
-doy = [79, 172, 265, 355, 79, 172, 266, 355]
-saber_doy = doy[event]
-waccmx_select_day = set_day - waccmx_start_day
-'''
-# NRLMSISE
-if set_month < 10:
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s0%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4')
-else:
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4')
-msis_dat = np.zeros([1,145,96,144])
-#msis_dat = fname.variables['O'][:]
-msis_dat = fname.variables['T'][:]
-msis_dat_alt = fname.variables['Z3'][:]
-#msis_o = np.mean(msis_dat[0,:,:,64:81], axis=2) # range 160-200 deg long
-msis_T = np.mean(msis_dat[0,:,:,64:81], axis=2) # range 160-200 deg long
-msis_alt = np.mean(msis_dat_alt[0,:,:,64:81], axis=2) # range 160-200 deg long
-fname.close()
 
 # SABER
 fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/SABER/NIGHTLY/atox_athy_night_YY%s_V5.3_fixedfnight_SV2.nc' %set_year, 'r', format='NETCDF4')
@@ -105,7 +81,6 @@ def calc_saber_conc_profile(tracer, lowlat, highlat):
 fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.2014-01-04-00000.nc', 'r', format='NETCDF4')
 levs_waccmx = fname.variables['lev'][:]
 lats_waccmx = fname.variables['lat'][:]
-lons_waccmx = fname.variables['lon'][:]
 fname.close()
 
 def make_waccmx_array(symbol, factor):  
@@ -115,7 +90,7 @@ def make_waccmx_array(symbol, factor):
         fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.%s-%s-%s-00000.nc' %(set_year, set_month, waccmx_start_day), 'r', format='NETCDF4') 
     tracer_dat = np.zeros([7,145,96,144])
     tracer_dat = fname.variables[symbol][:]*factor
-    tracer = np.mean(tracer_dat[waccmx_select_day,:,:,64:81], axis=2) # range 160-200 deg long
+    tracer = np.mean(tracer_dat[waccmx_select_day,:,:,64:81], axis=2)
     fname.close()
     return tracer
 
@@ -141,8 +116,36 @@ def calc_waccmx_conc_profile(tracer, lowlat, highlat):
         tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * levs_waccmx[i]) / (R * T_waccmx_weighted[i])
     return tracer_weighted_conc
 
+# NRLMSISE
+fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_20090320-00000.nc', 'r', format='NETCDF4')
+lats_msis = fname.variables['latitude'][:]
+fname.close()
+
+def make_msis_array(symbol):  
+    if set_month < 10:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s0%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4') 
+    else:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4') 
+    tracer_dat = np.zeros([1,145,96,144])
+    tracer_dat = fname.variables[symbol][:]
+    tracer = np.mean(tracer_dat[0,:,:,64:81], axis=2)
+    fname.close()
+    return tracer
+
+def calc_msis_cos_factor(tracer, lowlat, highlat):
+    tracer_weighted = np.zeros(145)    
+    for j in range(0,145):    
+        sig_cos_x = 0
+        sig_cos = 0
+        for k in range(lowlat, highlat):
+            sig_cos_x = sig_cos_x + (math.cos(math.radians(lats_msis[k])) * tracer[j][k])
+            sig_cos = sig_cos + math.cos(math.radians(lats_msis[k]))         
+            if  k == (highlat - 1):
+                tracer_weighted[j] = sig_cos_x / sig_cos
+    return tracer_weighted
+
 # Plot
-def plot_1d(tracer_weighted, alt_weighted, factor, name, lowlat, highlat, config, units, color, plot_no):
+def plot_1d(tracer_weighted, alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, plot_no):
     if plot_no > 5:
         plot_no = plot_no - 6
     plt.subplot(gs1[plot_no])
@@ -152,10 +155,8 @@ def plot_1d(tracer_weighted, alt_weighted, factor, name, lowlat, highlat, config
     x = tracer_weighted[::-1]
     y = alt_weighted[::-1]
     plt.plot(x, y, color=color, label=config)
-    #plt.xlim(0,8.e+11)
-    plt.xlim(0,1000)
+    plt.xlim(0,xlim)
     plt.ylim(50,200)
-    #plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     if plot_no == 0:
         plt.ylabel('Altitude [km]', fontsize=12)
         plt.tick_params(labelbottom='off')
@@ -178,34 +179,61 @@ def plot_1d(tracer_weighted, alt_weighted, factor, name, lowlat, highlat, config
         plt.legend(loc=1)
     return
 
-def setup_plot_1d(tracer, alt, step, factor, name, config, units, color):
+def setup_plot_1d_chem(tracer, alt, step, factor, xlim, name, config, units, color):
+    for i in range(0,6):    
+        lowlat = i * step
+        highlat = (i * step) + step
+        if config == 'saber':
+            saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
+            saber_alt_weighted = calc_saber_cos_factor(alt, lowlat, highlat)
+            plot_1d(saber_tracer_weighted_conc, saber_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+        if config == 'waccm-x':
+            waccmx_tracer_weighted_conc = calc_waccmx_conc_profile(tracer, lowlat, highlat)
+            waccmx_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
+            plot_1d(waccmx_tracer_weighted_conc, waccmx_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+        if config == 'msis':
+            msis_tracer_weighted = calc_msis_cos_factor(tracer, lowlat, highlat)
+            msis_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
+            plot_1d(msis_tracer_weighted, msis_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+            if set_month < 10:
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+            else:
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)                
+    return
+
+def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, color):
     for i in range(0,6):    
         lowlat = i * step
         highlat = (i * step) + step
         if config == 'saber':
             saber_tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
-            #saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
             saber_alt_weighted = calc_saber_cos_factor(alt, lowlat, highlat)
             plot_1d(saber_tracer_weighted, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
-            #plot_1d(saber_tracer_weighted_conc, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
             waccmx_tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
-            #waccmx_tracer_weighted_conc = calc_waccmx_conc_profile(tracer, lowlat, highlat)
-            waccmx_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)       
-            plot_1d(waccmx_tracer_weighted, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
-            #plot_1d(waccmx_tracer_weighted_conc, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
-        if config == 'msis':
-            msis_tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
             waccmx_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
-            plot_1d(msis_tracer_weighted, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)  
+            plot_1d(waccmx_tracer_weighted, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+        if config == 'msis':
+            msis_tracer_weighted = calc_msis_cos_factor(tracer, lowlat, highlat)
+            msis_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
+            plot_1d(msis_tracer_weighted, msis_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            if set_month < 10:
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+            else:
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
     return
 
-#saber_o = make_saber_array(o, set_year, set_day)
-saber_T = make_saber_array(T, set_year, set_day)
 saber_alt = make_saber_array(alt, set_year, set_day)
-#waccmx_o =  make_waccmx_array('O',1)
-waccmx_T = make_waccmx_array('T', 1)
 waccmx_alt =  make_waccmx_array('Z3',1.e-3)
+msis_alt = make_msis_array('Z3')
+
+saber_o = make_saber_array(o, set_year, set_day)
+waccmx_o =  make_waccmx_array('O',1)
+msis_o = make_msis_array('O')
+
+saber_T = make_saber_array(T, set_year, set_day)
+waccmx_T = make_waccmx_array('T', 1)
+msis_T = make_msis_array('T')
 
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(11,8))
 gs1 = gridspec.GridSpec(2, 3)
@@ -214,46 +242,13 @@ if set_month < 10:
     plt.suptitle('%s/0%s/%s, night, 20%sW to 20%sE' %(set_year, set_month, set_day, deg, deg), fontsize=16)
 else:
     plt.suptitle('%s/%s/%s, night, 20%sW to 20%sE' %(set_year, set_month, set_day, deg, deg), fontsize=16)
-#setup_plot_1d(saber_o, saber_alt, 6, 5, 'atomic_oxygen', 'saber', 'cm-3', 'm')
-#setup_plot_1d(waccmx_o, waccmx_alt, 16, 1.875, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
-#setup_plot_1d(msis_o, msis_alt, 16, 1.875, 'atomic_oxygen', 'msis', 'cm-3', 'b')
-setup_plot_1d(saber_T, saber_alt, 6, 5, 'temperature', 'saber', 'K', 'm')
-setup_plot_1d(waccmx_T, waccmx_alt, 16, 1.875, 'temperature', 'waccm-x', 'K', 'k')
-setup_plot_1d(msis_T, msis_alt, 16, 1.875, 'temperature', 'msis', 'K', 'b')
-'''
-if event == 0:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smin_spring_equinox.jpg', bbox_inches='tight', dpi=300)     
-if event == 1:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smin_summer_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 2:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smin_autumn_equinox.jpg', bbox_inches='tight', dpi=300)
-if event == 3:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smin_winter_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 4:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smax_spring_equinox.jpg', bbox_inches='tight', dpi=300)     
-if event == 5:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smax_summer_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 6:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smax_autumn_equinox.jpg', bbox_inches='tight', dpi=300)
-if event == 7:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_smax_winter_solstice.jpg', bbox_inches='tight', dpi=300)
-'''
 
-if event == 0:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smin_spring_equinox.jpg', bbox_inches='tight', dpi=300)     
-if event == 1:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smin_summer_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 2:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smin_autumn_equinox.jpg', bbox_inches='tight', dpi=300)
-if event == 3:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smin_winter_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 4:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smax_spring_equinox.jpg', bbox_inches='tight', dpi=300)     
-if event == 5:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smax_summer_solstice.jpg', bbox_inches='tight', dpi=300)
-if event == 6:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smax_autumn_equinox.jpg', bbox_inches='tight', dpi=300)
-if event == 7:
-    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/temperature_smax_winter_solstice.jpg', bbox_inches='tight', dpi=300)
+setup_plot_1d_chem(saber_o, saber_alt, 6, 5, 8.e+11, 'atomic_oxygen', 'saber', 'cm-3', 'm')
+setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
+setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
+
+#setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
+#setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
+#setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
 
 plt.show()
