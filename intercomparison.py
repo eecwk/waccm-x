@@ -14,7 +14,7 @@ days = [20, 21, 22, 21, 20, 21, 23, 21]
 waccmx_start_days = [14, 20, 19, 19, 15, 21, 20, 20]
 doy = [79, 172, 265, 355, 79, 172, 266, 355]
 
-event = 6
+event = 0
 set_year = years[event]
 set_month = months[event]
 set_day = days[event]
@@ -168,9 +168,12 @@ def plot_1d(tracer_weighted, alt_weighted, factor, xlim, name, lowlat, highlat, 
     if plot_no > 5:
         plot_no = plot_no - 6
     plt.subplot(gs1[plot_no])
-    lowlat_no = int((lowlat * factor) - 90)
-    highlat_no = int((highlat * factor) - 90) 
-    plt.title('%s%s to %s%s' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
+    lowlat_no = abs(int((lowlat * factor) - 90))
+    highlat_no = abs(int((highlat * factor) - 90)) 
+    if plot_no < 3:
+        plt.title('%s%sS to %s%sS' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
+    if plot_no > 2:
+        plt.title('%s%sN to %s%sN' %(lowlat_no, deg, highlat_no, deg), fontsize=14)
     x = tracer_weighted[::-1]
     y = alt_weighted[::-1]
     plt.plot(x, y, color=color, label=config)
@@ -194,7 +197,7 @@ def plot_1d(tracer_weighted, alt_weighted, factor, xlim, name, lowlat, highlat, 
     if plot_no == 5:
         plt.xlabel('%s [%s]' %(name, units), fontsize=12)
         plt.tick_params(labelleft='off')
-    if config == 'msis' and plot_no == 2:
+    if config == 'saber' and plot_no == 2:
         plt.legend(loc=1)
     return
 
@@ -202,10 +205,6 @@ def setup_plot_1d_chem(tracer, alt, step, factor, xlim, name, config, units, col
     for i in range(0,6):    
         lowlat = i * step
         highlat = (i * step) + step
-        if config == 'saber':
-            saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
-            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
-            plot_1d(saber_tracer_weighted_conc, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
             waccmx_tracer_weighted_conc = calc_waccmx_conc_profile(tracer, lowlat, highlat)
             waccmx_alt_lat_band = calc_waccmx_lat_means(alt, lowlat, highlat)
@@ -214,6 +213,10 @@ def setup_plot_1d_chem(tracer, alt, step, factor, xlim, name, config, units, col
             msis_tracer_weighted = calc_msis_cos_factor(tracer, lowlat, highlat)
             msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
             plot_1d(msis_tracer_weighted, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
+        if config == 'saber':
+            saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
+            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
+            plot_1d(saber_tracer_weighted_conc, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)    
             if set_month < 10:
                 plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-0%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
@@ -224,10 +227,6 @@ def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, col
     for i in range(0,6):    
         lowlat = i * step
         highlat = (i * step) + step
-        if config == 'saber':
-            saber_tracer_lat_band = calc_saber_lat_means(tracer, lowlat, highlat)
-            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
-            plot_1d(saber_tracer_lat_band, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
             waccmx_tracer_lat_band = calc_waccmx_lat_means(tracer, lowlat, highlat)
             waccmx_alt_lat_band = calc_waccmx_lat_means(alt, lowlat, highlat)
@@ -236,6 +235,10 @@ def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, col
             msis_tracer_lat_band = calc_msis_lat_means(tracer, lowlat, highlat)
             msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
             plot_1d(msis_tracer_lat_band, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
+        if config == 'saber':
+            saber_tracer_lat_band = calc_saber_lat_means(tracer, lowlat, highlat)
+            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
+            plot_1d(saber_tracer_lat_band, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)            
             if set_month < 10:
                 plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-0%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
@@ -266,16 +269,16 @@ if set_month < 10:
 else:
     plt.suptitle('%s/%s/%s, night, 20%sW to 20%sE' %(set_year, set_month, set_day, deg, deg), fontsize=16)
 
-#setup_plot_1d_chem(saber_o, saber_alt, 6, 5, 8.e+11, 'atomic_oxygen', 'saber', 'cm-3', 'm')
-#setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
-#setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
+setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
+setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
+setup_plot_1d_chem(saber_o, saber_alt, 6, 5, 8.e+11, 'atomic_oxygen', 'saber', 'cm-3', 'm')
 
-setup_plot_1d_chem(saber_h, saber_alt, 6, 5, 4.e+8, 'atomic_hydrogen', 'saber', 'cm-3', 'm')
-setup_plot_1d_chem(waccmx_h, waccmx_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'waccm-x', 'cm-3', 'k')
-setup_plot_1d_chem(msis_h, msis_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'msis', 'cm-3', 'b')
+#setup_plot_1d_chem(waccmx_h, waccmx_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'waccm-x', 'cm-3', 'k')
+#setup_plot_1d_chem(msis_h, msis_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'msis', 'cm-3', 'b')
+#setup_plot_1d_chem(saber_h, saber_alt, 6, 5, 4.e+8, 'atomic_hydrogen', 'saber', 'cm-3', 'm')
 
-#setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
 #setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
 #setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
+#setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
 
 plt.show()
