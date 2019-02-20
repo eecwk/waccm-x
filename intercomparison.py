@@ -14,7 +14,7 @@ days = [20, 21, 22, 21, 20, 21, 23, 21]
 waccmx_start_days = [14, 20, 19, 19, 15, 21, 20, 20]
 doy = [79, 172, 265, 355, 79, 172, 266, 355]
 
-event = 1
+event = 5
 set_year = years[event]
 set_month = months[event]
 set_day = days[event]
@@ -48,7 +48,7 @@ def make_saber_array(tracer, set_year, set_day):
                 if tracer_scans[i] > 0:
                     tracer_scans_good = np.append(tracer_scans_good, tracer_scans[i])
             if len(tracer_scans_good) < 2:
-                tracer_scans_good = 0
+                tracer_scans_good = np.nan
             tracer_scans_mean = np.mean(tracer_scans_good)
             tracer_bin[j,k] = tracer_scans_mean                               
     return tracer_bin      
@@ -64,6 +64,12 @@ def calc_saber_cos_factor(tracer_bin, lowlat, highlat):
             if  k == (highlat - 1):
                 tracer_weighted[j] = sig_cos_x / sig_cos
     return tracer_weighted
+
+def calc_saber_lat_means(tracer_bin, lowlat, highlat):
+    tracer_select = np.zeros(16)
+    for j in range(0,16):
+        tracer_select[j] = np.mean(tracer_bin[j,lowlat:highlat])
+    return tracer_select
 
 def calc_saber_conc_profile(tracer, lowlat, highlat):
     T_saber = make_saber_array(T, set_year, set_day)
@@ -106,6 +112,12 @@ def calc_waccmx_cos_factor(tracer, lowlat, highlat):
                 tracer_weighted[j] = sig_cos_x / sig_cos
     return tracer_weighted
 
+def calc_waccmx_lat_means(tracer_bin, lowlat, highlat):
+    tracer_select = np.zeros(145)
+    for j in range(0,145):
+        tracer_select[j] = np.mean(tracer_bin[j,lowlat:highlat])
+    return tracer_select
+
 def calc_waccmx_conc_profile(tracer, lowlat, highlat):
     T_waccmx = np.zeros([1,145,96,144])
     T_waccmx = make_waccmx_array('T', 1)
@@ -143,6 +155,12 @@ def calc_msis_cos_factor(tracer, lowlat, highlat):
             if  k == (highlat - 1):
                 tracer_weighted[j] = sig_cos_x / sig_cos
     return tracer_weighted
+
+def calc_msis_lat_means(tracer_bin, lowlat, highlat):
+    tracer_select = np.zeros(145)
+    for j in range(0,145):
+        tracer_select[j] = np.mean(tracer_bin[j,lowlat:highlat])
+    return tracer_select
 
 # Plot
 def plot_1d(tracer_weighted, alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, plot_no):
@@ -185,16 +203,16 @@ def setup_plot_1d_chem(tracer, alt, step, factor, xlim, name, config, units, col
         highlat = (i * step) + step
         if config == 'saber':
             saber_tracer_weighted_conc = calc_saber_conc_profile(tracer, lowlat, highlat)
-            saber_alt_weighted = calc_saber_cos_factor(alt, lowlat, highlat)
-            plot_1d(saber_tracer_weighted_conc, saber_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
+            plot_1d(saber_tracer_weighted_conc, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
             waccmx_tracer_weighted_conc = calc_waccmx_conc_profile(tracer, lowlat, highlat)
-            waccmx_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
-            plot_1d(waccmx_tracer_weighted_conc, waccmx_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+            waccmx_alt_lat_band = calc_waccmx_lat_means(alt, lowlat, highlat)
+            plot_1d(waccmx_tracer_weighted_conc, waccmx_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'msis':
             msis_tracer_weighted = calc_msis_cos_factor(tracer, lowlat, highlat)
-            msis_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
-            plot_1d(msis_tracer_weighted, msis_alt_weighted, factor, xlim, name, lowlat, highlat, config, units, color, i)
+            msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
+            plot_1d(msis_tracer_weighted, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
             if set_month < 10:
                 plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
@@ -206,17 +224,17 @@ def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, col
         lowlat = i * step
         highlat = (i * step) + step
         if config == 'saber':
-            saber_tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
-            saber_alt_weighted = calc_saber_cos_factor(alt, lowlat, highlat)
-            plot_1d(saber_tracer_weighted, saber_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            saber_tracer_lat_band = calc_saber_lat_means(tracer, lowlat, highlat)
+            saber_alt_lat_band = calc_saber_lat_means(alt, lowlat, highlat)
+            plot_1d(saber_tracer_lat_band, saber_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'waccm-x':
-            waccmx_tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
-            waccmx_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
-            plot_1d(waccmx_tracer_weighted, waccmx_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            waccmx_tracer_lat_band = calc_waccmx_lat_means(tracer, lowlat, highlat)
+            waccmx_alt_lat_band = calc_waccmx_lat_means(alt, lowlat, highlat)
+            plot_1d(waccmx_tracer_lat_band, waccmx_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
         if config == 'msis':
-            msis_tracer_weighted = calc_msis_cos_factor(tracer, lowlat, highlat)
-            msis_alt_weighted = calc_waccmx_cos_factor(alt, lowlat, highlat)
-            plot_1d(msis_tracer_weighted, msis_alt_weighted, factor, name, lowlat, highlat, config, units, color, i)
+            msis_tracer_lat_band = calc_msis_lat_means(tracer, lowlat, highlat)
+            msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
+            plot_1d(msis_tracer_lat_band, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
             if set_month < 10:
                 plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
@@ -243,12 +261,12 @@ if set_month < 10:
 else:
     plt.suptitle('%s/%s/%s, night, 20%sW to 20%sE' %(set_year, set_month, set_day, deg, deg), fontsize=16)
 
-setup_plot_1d_chem(saber_o, saber_alt, 6, 5, 8.e+11, 'atomic_oxygen', 'saber', 'cm-3', 'm')
-setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
-setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
+#setup_plot_1d_chem(saber_o, saber_alt, 6, 5, 8.e+11, 'atomic_oxygen', 'saber', 'cm-3', 'm')
+#setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
+#setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
 
-#setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
-#setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
-#setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
+setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
+setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
+setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
 
 plt.show()
