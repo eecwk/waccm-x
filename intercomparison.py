@@ -14,7 +14,7 @@ days = [20, 21, 22, 21, 20, 21, 23, 21]
 waccmx_start_days = [14, 20, 19, 19, 15, 21, 20, 20]
 doy = [79, 172, 265, 355, 79, 172, 266, 355]
 
-event = 5
+event = 6
 set_year = years[event]
 set_month = months[event]
 set_day = days[event]
@@ -25,6 +25,7 @@ waccmx_select_day = set_day - waccmx_start_day
 # SABER
 fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/SABER/NIGHTLY/atox_athy_night_YY%s_V5.3_fixedfnight_SV2.nc' %set_year, 'r', format='NETCDF4')
 o = fname.variables['qatox'][:]
+h = fname.variables['qathy'][:]
 T = fname.variables['ktemp'][:]
 p = fname.variables['pressure'][:]
 lats_saber = fname.variables['lat'][:]
@@ -214,9 +215,9 @@ def setup_plot_1d_chem(tracer, alt, step, factor, xlim, name, config, units, col
             msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
             plot_1d(msis_tracer_weighted, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
             if set_month < 10:
-                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-0%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
-                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)                
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)                
     return
 
 def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, color):
@@ -236,9 +237,9 @@ def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, col
             msis_alt_lat_band = calc_msis_lat_means(alt, lowlat, highlat)
             plot_1d(msis_tracer_lat_band, msis_alt_lat_band, factor, xlim, name, lowlat, highlat, config, units, color, i)
             if set_month < 10:
-                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-0%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)
             else:
-                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+                plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/%s_%s-%s-%s.jpg' %(name, set_year, set_month, set_day), bbox_inches='tight', dpi=300)
     return
 
 saber_alt = make_saber_array(alt, set_year, set_day)
@@ -248,6 +249,10 @@ msis_alt = make_msis_array('Z3')
 saber_o = make_saber_array(o, set_year, set_day)
 waccmx_o =  make_waccmx_array('O',1)
 msis_o = make_msis_array('O')
+
+saber_h = make_saber_array(h, set_year, set_day)
+waccmx_h = make_waccmx_array('H',1)
+msis_h = make_msis_array('H')
 
 saber_T = make_saber_array(T, set_year, set_day)
 waccmx_T = make_waccmx_array('T', 1)
@@ -265,8 +270,12 @@ else:
 #setup_plot_1d_chem(waccmx_o, waccmx_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'waccm-x', 'cm-3', 'k')
 #setup_plot_1d_chem(msis_o, msis_alt, 16, 1.875, 8.e+11, 'atomic_oxygen', 'msis', 'cm-3', 'b')
 
-setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
-setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
-setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
+setup_plot_1d_chem(saber_h, saber_alt, 6, 5, 4.e+8, 'atomic_hydrogen', 'saber', 'cm-3', 'm')
+setup_plot_1d_chem(waccmx_h, waccmx_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'waccm-x', 'cm-3', 'k')
+setup_plot_1d_chem(msis_h, msis_alt, 16, 1.875, 4.e+8, 'atomic_hydrogen', 'msis', 'cm-3', 'b')
+
+#setup_plot_1d_phys(saber_T, saber_alt, 6, 5, 1000, 'temperature', 'saber', 'K', 'm')
+#setup_plot_1d_phys(waccmx_T, waccmx_alt, 16, 1.875, 1000, 'temperature', 'waccm-x', 'K', 'k')
+#setup_plot_1d_phys(msis_T, msis_alt, 16, 1.875, 1000, 'temperature', 'msis', 'K', 'b')
 
 plt.show()
