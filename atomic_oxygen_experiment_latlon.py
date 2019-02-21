@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import netCDF4
+import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.gridspec as gridspec
 
@@ -13,8 +13,8 @@ days = [20, 21, 22, 21, 20, 21, 23, 21]
 waccmx_start_days = [14, 20, 19, 19, 15, 21, 20, 20]
 doy = [79, 172, 265, 355, 79, 172, 266, 355]
 
-altitude = 100
-event = 0
+altitude = 85
+event = 6
 set_year = years[event]
 set_month = months[event]
 set_day = days[event]
@@ -25,6 +25,7 @@ waccmx_select_day = set_day - waccmx_start_day
 # SABER
 fname = netCDF4.Dataset('/nfs/a265/earfw/CHRIS/SABER/NIGHTLY/atox_athy_night_YY%s_V5.3_fixedfnight_SV2.nc' %set_year, 'r', format='NETCDF4')
 o = fname.variables['qatox'][:]
+h = fname.variables['qathy'][:]
 T = fname.variables['ktemp'][:]
 p = fname.variables['pressure'][:]
 lats_saber = fname.variables['lat'][:]
@@ -88,7 +89,10 @@ lons_waccmx = fname.variables['lon'][:]
 fname.close()
 
 def make_waccmx_array(symbol, factor):
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.%s-0%s-%s-00000.nc' %(set_year, set_month, waccmx_start_day), 'r', format='NETCDF4')
+    if set_month < 10:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.%s-0%s-%s-00000.nc' %(set_year, set_month, waccmx_start_day), 'r', format='NETCDF4') 
+    else:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/earth_system_grid/ccsm4_daily_inst/f.e20.FXSD.f19_f19.001.cam.h2.%s-%s-%s-00000.nc' %(set_year, set_month, waccmx_start_day), 'r', format='NETCDF4')    
     tracer_dat = np.zeros([7,145,96,144])
     tracer_dat = fname.variables[symbol][:]*factor    
     tracer = tracer_dat[waccmx_select_day,:,:,:]    
@@ -124,7 +128,10 @@ lons_msis = fname.variables['longitude'][:]
 fname.close()
 
 def make_msis_array(symbol):  
-    fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s0%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4') 
+    if set_month < 10:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s0%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4') 
+    else:
+        fname = netCDF4.Dataset('/nfs/a328/eecwk/nrlmsise/output_data/nrlmsise_ghp7_%s%s%s-00000.nc' %(set_year, set_month, set_day), 'r', format='NETCDF4') 
     tracer_dat = np.zeros([1,145,96,144])
     tracer_dat = fname.variables[symbol][:]
     tracer = tracer_dat[0,:,:,:]
@@ -158,6 +165,8 @@ def plot_2d_latlon_sub(tracer, lats, lons, diffs, config, name, units, plot_no):
     x, y = np.meshgrid(lons, lats)
     ax = plt.contourf(x[:,:], y[:,:], tracer[:,:], diffs)
     #ax = plt.contourf(x[:,:], y[:,:], tracer[:,:])
+    plt.xlim(0,360)
+    plt.ylim(-90,90)
     plt.xlabel('Longitude [%s]' %deg, fontsize=12)
     plt.title('%s' %config, fontsize=14)
     if plot_no == 0:
@@ -174,32 +183,60 @@ def plot_2d_latlon_sub(tracer, lats, lons, diffs, config, name, units, plot_no):
 
 saber_alt = make_saber_array(alt)
 saber_o = make_saber_array(o)
+saber_h = make_saber_array(h)
 saber_T = make_saber_array(T)
 saber_p_int = interp_saber_p(altitude, saber_alt, p)
 saber_o_int = interp_saber_tracer(saber_o, p, saber_p_int)
+saber_h_int = interp_saber_tracer(saber_h, p, saber_p_int)
 saber_T_int = interp_saber_tracer(saber_T, p, saber_p_int)
 saber_o_int_conc = calc_saber_conc_profile(saber_o_int, saber_p_int, saber_T_int)
+saber_h_int_conc = calc_saber_conc_profile(saber_h_int, saber_p_int, saber_T_int)
 
 waccmx_alt = make_waccmx_array('Z3', 1.e-3)
 waccmx_o = make_waccmx_array('O', 1)
+waccmx_h = make_waccmx_array('H', 1)
 waccmx_T = make_waccmx_array('T', 1)
 waccmx_p_int = interp_waccmx_p(altitude, waccmx_alt, levs_waccmx)
 waccmx_o_int = interp_waccmx_tracer(waccmx_o, levs_waccmx, waccmx_p_int)
+waccmx_h_int = interp_waccmx_tracer(waccmx_h, levs_waccmx, waccmx_p_int)
 waccmx_T_int = interp_waccmx_tracer(waccmx_T, levs_waccmx, waccmx_p_int)
 waccmx_o_int_conc = calc_waccmx_conc_profile(waccmx_o_int, waccmx_p_int, waccmx_T_int)
+waccmx_h_int_conc = calc_waccmx_conc_profile(waccmx_h_int, waccmx_p_int, waccmx_T_int)
 
 msis_alt = make_msis_array('Z3')
 msis_o = make_msis_array('O')
+msis_h = make_msis_array('H')
 msis_T = make_msis_array('T')
 msis_p_int = interp_msis_p(altitude, msis_alt, levs_msis)
 msis_o_int = interp_msis_tracer(msis_o, levs_msis, msis_p_int)
+msis_h_int = interp_msis_tracer(msis_h, levs_msis, msis_p_int)
 
-fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10,4))
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12,4))
 gs1 = gridspec.GridSpec(1, 3)
-gs1.update(wspace=0.1, hspace=0.1)
-plt.suptitle('%s/0%s/%s, night, (%s km)' %(set_year, set_month, set_day, altitude), fontsize=16)
+gs1.update(wspace=0.1, hspace=0.5)
+if set_month < 10:
+    plt.suptitle('%s/0%s/%s, night, (%s km)' %(set_year, set_month, set_day, altitude), fontsize=16)
+else:
+    plt.suptitle('%s/%s/%s, night, (%s km)' %(set_year, set_month, set_day, altitude), fontsize=16)
+
+'''
 diffs = np.arange(1.e+11,7.e+11,2.e+10)
 plot_2d_latlon_sub(waccmx_o_int_conc, lats_waccmx, lons_waccmx, diffs, 'WACCM-X', 'atomic_oxygen', 'cm-3', 0)
 plot_2d_latlon_sub(msis_o_int, lats_msis, lons_msis, diffs, 'MSIS', 'atomic_oxygen', 'cm-3', 1)
 plot_2d_latlon_sub(saber_o_int_conc, np.arange(-87.5,92.5,5), np.arange(5,365,10), diffs, 'SABER', 'atomic_oxygen', 'cm-3', 2)
+if set_month < 10:
+    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-0%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+else:
+    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_oxygen_%s-%s-%s.jpg' %(set_year, set_month, set_day), bbox_inches='tight', dpi=300)
+'''
+
+diffs = np.arange(5.e+7,40.e+7,1.e+7)
+plot_2d_latlon_sub(waccmx_h_int_conc, lats_waccmx, lons_waccmx, diffs, 'WACCM-X', 'atomic_hydrogen', 'cm-3', 0)
+plot_2d_latlon_sub(msis_h_int, lats_msis, lons_msis, diffs, 'MSIS', 'atomic_hydrogen', 'cm-3', 1)
+plot_2d_latlon_sub(saber_h_int_conc, np.arange(-87.5,92.5,5), np.arange(5,365,10), diffs, 'SABER', 'atomic_hydrogen', 'cm-3', 2)
+if set_month < 10:
+    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_hydrogen_%s-0%s-%s_%skm.jpg' %(set_year, set_month, set_day, altitude), bbox_inches='tight', dpi=300)
+else:
+    plt.savefig('/nfs/a328/eecwk/waccm-x/figures/atomic_oxygen_experiment/intercomparison/atomic_hydrogen_%s-%s-%s_%skm.jpg' %(set_year, set_month, set_day, altitude), bbox_inches='tight', dpi=300)
+
 plt.show()
