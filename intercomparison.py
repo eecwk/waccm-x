@@ -73,13 +73,12 @@ def calc_saber_lat_means(tracer_bin, lowlat, highlat):
     return tracer_select
 
 def calc_saber_conc_profile(tracer, lowlat, highlat):
-    T_saber = make_saber_array(T, set_year, set_day)
-    T_saber_weighted = calc_saber_cos_factor(T_saber, lowlat, highlat)
+    saber_T_lat_band = calc_saber_lat_means(saber_T, lowlat, highlat)
     tracer_weighted = calc_saber_cos_factor(tracer, lowlat, highlat)
     tracer_weighted_conc = np.zeros(16)  
     for i in range(0,16):
-        if T_saber_weighted[i] > 0:
-            tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * p[i]) / (R * T_saber_weighted[i])
+        if saber_T_lat_band[i] > 0:
+            tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * p[i]) / (R * saber_T_lat_band[i])
         else:
             tracer_weighted_conc[i] = np.nan
     return tracer_weighted_conc
@@ -120,13 +119,11 @@ def calc_waccmx_lat_means(tracer_bin, lowlat, highlat):
     return tracer_select
 
 def calc_waccmx_conc_profile(tracer, lowlat, highlat):
-    T_waccmx = np.zeros([1,145,96,144])
-    T_waccmx = make_waccmx_array('T', 1)
-    T_waccmx_weighted = calc_waccmx_cos_factor(T_waccmx, lowlat, highlat)    
+    waccmx_T_lat_band = calc_waccmx_lat_means(waccmx_T, lowlat, highlat)
     tracer_weighted = calc_waccmx_cos_factor(tracer, lowlat, highlat)
-    tracer_weighted_conc = np.zeros(145)  
+    tracer_weighted_conc = np.zeros(145)
     for i in range(0,145):
-        tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * levs_waccmx[i]) / (R * T_waccmx_weighted[i])
+        tracer_weighted_conc[i] = (tracer_weighted[i] * 1.e-6 * N_A * 100 * levs_waccmx[i]) / (R * waccmx_T_lat_band[i])
     return tracer_weighted_conc
 
 # NRLMSISE
@@ -177,8 +174,21 @@ def plot_1d(tracer_weighted, alt_weighted, factor, xlim, name, lowlat, highlat, 
     x = tracer_weighted[::-1]
     y = alt_weighted[::-1]
     plt.plot(x, y, color=color, label=config)
+    #
     plt.xlim(0,xlim)
     plt.ylim(50,200)
+    #
+    #plt.xlim(1.e+6,1.e+10)
+    #plt.ylim(150,500)
+    #plt.xscale('log')
+    #
+    #plt.xlim(1.e+4,1.e+7)
+    #plt.ylim(150,500)
+    #plt.xscale('log')
+    #
+    #plt.xlim(500,1200)
+    #plt.ylim(150,500)
+    #
     if plot_no == 0:
         plt.ylabel('Altitude [km]', fontsize=12)
         plt.tick_params(labelbottom='off')
@@ -246,19 +256,18 @@ def setup_plot_1d_phys(tracer, alt, step, factor, xlim, name, config, units, col
     return
 
 saber_alt = make_saber_array(alt, set_year, set_day)
-waccmx_alt =  make_waccmx_array('Z3',1.e-3)
-msis_alt = make_msis_array('Z3')
-
 saber_o = make_saber_array(o, set_year, set_day)
-waccmx_o =  make_waccmx_array('O',1)
-msis_o = make_msis_array('O')
-
 saber_h = make_saber_array(h, set_year, set_day)
-waccmx_h = make_waccmx_array('H',1)
-msis_h = make_msis_array('H')
-
 saber_T = make_saber_array(T, set_year, set_day)
+
+waccmx_alt =  make_waccmx_array('Z3',1.e-3)
+waccmx_o =  make_waccmx_array('O',1)
+waccmx_h = make_waccmx_array('H',1)
 waccmx_T = make_waccmx_array('T', 1)
+
+msis_alt = make_msis_array('Z3')
+msis_o = make_msis_array('O')
+msis_h = make_msis_array('H')
 msis_T = make_msis_array('T')
 
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(11,8))
